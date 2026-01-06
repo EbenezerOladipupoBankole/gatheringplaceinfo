@@ -1,0 +1,127 @@
+
+export const WARDS = [
+  "Abiola Way",
+  "Apena",
+  "Ake Ward",
+  "Alabata",
+  "Kugba",
+  "Obantoko",
+  "Kuto Ward",
+  "Leme Ward",
+  "Idi-aba Ward",
+  "Camp Branch",
+  "Odeda",
+  "Interested Person"
+];
+
+export const ADMIN_PASSWORD = "gatheringplace";
+
+export interface RosterMember {
+  name: string;
+  ward: string;
+}
+
+export const MEMBER_ROSTER: RosterMember[] = [
+  // --- Ake Ward ---
+  { name: "Abati Kehinde", ward: "Ake Ward" },
+  { name: "Akinola Emmanuel", ward: "Ake Ward" },
+  { name: "Amosu Peter", ward: "Ake Ward" },
+  { name: "Babayanju Gbemisola", ward: "Ake Ward" },
+  { name: "Basit Kazeem", ward: "Ake Ward" },
+  { name: "Darasimi Bello", ward: "Ake Ward" },
+  { name: "Ejechi David", ward: "Ake Ward" },
+  { name: "Hassan Mojisola", ward: "Ake Ward" },
+  { name: "Oyewusi Abigeal", ward: "Ake Ward" },
+  { name: "Patricia Oghenreme Gowon", ward: "Ake Ward" },
+  { name: "Sodeke Nifemi", ward: "Ake Ward" },
+  { name: "Talabi Victor", ward: "Ake Ward" },
+  { name: "Yamenesa Gabriel", ward: "Ake Ward" },
+
+  // --- Camp Branch ---
+  { name: "Adeosun Oyinlola", ward: "Camp Branch" },
+  { name: "Ateru Princess", ward: "Camp Branch" },
+  { name: "Bankole Bolariwa", ward: "Camp Branch" },
+  { name: "Egunjobi Bukola", ward: "Camp Branch" },
+  { name: "Essiet Samson", ward: "Camp Branch" },
+  { name: "Essiet Udo", ward: "Camp Branch" },
+  { name: "Iduwe Mercy", ward: "Camp Branch" },
+  { name: "Ogunbiyi Oluwatobiloba", ward: "Camp Branch" },
+  { name: "Ogunsola Boluwatife", ward: "Camp Branch" },
+  { name: "Ogunsola Ifeoluwa", ward: "Camp Branch" },
+  { name: "Olawale Sunday", ward: "Camp Branch" },
+  { name: "Omoyele Boluwatife", ward: "Camp Branch" },
+  { name: "Sosanya Mubarak", ward: "Camp Branch" },
+
+  // --- Idi-aba Ward ---
+  { name: "Adam Adebesin", ward: "Idi-aba Ward" },
+  { name: "Anthonia Oton", ward: "Idi-aba Ward" },
+  { name: "Kehinde Oluleke", ward: "Idi-aba Ward" },
+  { name: "Motunrayo Agboba", ward: "Idi-aba Ward" },
+  { name: "Taiwo Oluleke", ward: "Idi-aba Ward" },
+
+  // --- Kuto Ward ---
+  { name: "Adebaki Emmanuel", ward: "Kuto Ward" },
+  { name: "Ajuwon Emmanuel", ward: "Kuto Ward" },
+  { name: "Akintode Blessing", ward: "Kuto Ward" },
+  { name: "Akintonye Esther", ward: "Kuto Ward" },
+  { name: "Ejem Chioma", ward: "Kuto Ward" },
+  { name: "Ekuase Stanley", ward: "Kuto Ward" },
+  { name: "Job Esther", ward: "Kuto Ward" },
+  { name: "Kalma Goodluck", ward: "Kuto Ward" },
+  { name: "Lawal Olamide", ward: "Kuto Ward" },
+  { name: "Lawson Oluwadamilare", ward: "Kuto Ward" },
+  { name: "Nworie Innocent", ward: "Kuto Ward" },
+  { name: "Ochoche Daniel", ward: "Kuto Ward" },
+  { name: "Ogunsanya Ayomide", ward: "Kuto Ward" },
+  { name: "Okechukwu Orji", ward: "Kuto Ward" },
+  { name: "Okoro Kelvin", ward: "Kuto Ward" },
+  { name: "Oluwaramipada Esther", ward: "Kuto Ward" },
+  { name: "Omode Bamidele", ward: "Kuto Ward" },
+  { name: "Onya Emmanuel", ward: "Kuto Ward" },
+  { name: "Osho Moturayo", ward: "Kuto Ward" },
+  { name: "Saka Faruq", ward: "Kuto Ward" },
+  { name: "Udumaga Paul", ward: "Kuto Ward" },
+
+  // --- Leme Ward ---
+  { name: "Benjamin Akinwunmi", ward: "Leme Ward" },
+  { name: "Comfort Odey", ward: "Leme Ward" },
+  { name: "Emma Akinwunmi", ward: "Leme Ward" },
+  { name: "Emmanuel Ignatius", ward: "Leme Ward" },
+  { name: "Faith Ososami", ward: "Leme Ward" },
+  { name: "Feyisayo Ogundele", ward: "Leme Ward" },
+  { name: "Fiyinfoluwa Olawale", ward: "Leme Ward" },
+  { name: "Iyanuoluwa Malaolu", ward: "Leme Ward" },
+  { name: "Kingsley Martins", ward: "Leme Ward" },
+  { name: "Loveth Amifofun", ward: "Leme Ward" },
+  { name: "Mary Arikpo", ward: "Leme Ward" },
+  { name: "Mercy Oke", ward: "Leme Ward" },
+  { name: "Michael Ogundeji", ward: "Leme Ward" },
+  { name: "Precious Tunmise", ward: "Leme Ward" },
+  { name: "Victor Elerunndu", ward: "Leme Ward" },
+  { name: "Victor Ogundele", ward: "Leme Ward" },
+  { name: "Zion Obia", ward: "Leme Ward" },
+
+  // --- Odeda ---
+  { name: "Ajayi Grace", ward: "Odeda" },
+  { name: "Ajayi Peace", ward: "Odeda" },
+  { name: "Elijah Okiki Emmanuel", ward: "Odeda" },
+  { name: "Gabriel Jolaoluwa", ward: "Odeda" },
+  { name: "Gabriel Oluwapelumi", ward: "Odeda" },
+  { name: "Kabiru Abayomi Abass", ward: "Odeda" },
+  { name: "Mathew Samuel", ward: "Odeda" },
+  { name: "Ogwo Monday Joseph", ward: "Odeda" },
+  { name: "Okita Gift Omagbo", ward: "Odeda" },
+  { name: "Okita Patience Ote", ward: "Odeda" },
+  { name: "Oluwasegun Gift", ward: "Odeda" },
+  { name: "Oluwasegun Oluwatobiloba", ward: "Odeda" },
+  { name: "Samuel Gabriel Anu", ward: "Odeda" }
+];
+
+export const MOCK_RECORDS = [
+  { id: '1', full_name: 'Omode Bamidele', phone_number: '08012345678', ward: 'Kuto Ward', date: '2024-01-05', timestamp: 1704441600000 },
+  { id: '2', full_name: 'Essiet Udo', phone_number: '08123456789', ward: 'Camp Branch', date: '2024-01-05', timestamp: 1704441600000 },
+  { id: '3', full_name: 'Adam Adebesin', phone_number: '07034567890', ward: 'Idi-aba Ward', date: '2024-01-12', timestamp: 1705046400000 },
+  { id: '4', full_name: 'Ejechi David', phone_number: '09045678901', ward: 'Ake Ward', date: '2024-01-12', timestamp: 1705046400000 },
+  { id: '5', full_name: 'Faith Ososami', phone_number: '08056789012', ward: 'Leme Ward', date: '2024-02-02', timestamp: 1706860800000 },
+  { id: '6', full_name: 'Ogwo Monday Joseph', phone_number: '08167890123', ward: 'Odeda', date: '2024-02-09', timestamp: 1707465600000 }
+];
