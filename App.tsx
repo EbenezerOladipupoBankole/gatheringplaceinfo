@@ -103,7 +103,7 @@ const App: React.FC = () => {
                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
                  <div className="absolute bottom-6 left-8 md:bottom-10 md:left-12">
                     <span className="px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest mb-3 inline-block">
-                      Latter-day Saint YSA
+                      Young Adults and Gathering Place
                     </span>
                     <p className="text-white font-bold text-xl md:text-3xl tracking-tight drop-shadow-lg max-w-lg">
                       Strengthening Faith Together
@@ -118,10 +118,14 @@ const App: React.FC = () => {
                 <span className="text-[10px] font-black text-white/90 uppercase tracking-[0.4em] group-hover:tracking-[0.5em] transition-all">Abeokuta Nigeria Stake</span>
               </div>
               
+              <p className="text-[11px] font-bold text-white/70 mb-10 uppercase tracking-wider">
+                The Church Of Jesus Christ Of Latter-day Saints
+              </p>
+              
               {/* Main Headline */}
-              <h2 className="text-5xl md:text-7xl font-black text-white mb-10 tracking-tighter leading-[0.9] drop-shadow-[0_20px_20px_rgba(0,0,0,0.6)]">
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-10 tracking-tight leading-[0.95] drop-shadow-[0_20px_20px_rgba(0,0,0,0.6)] overflow-visible md:pr-4">
                 Welcome to <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 italic">Gathering Place</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 italic inline-block pr-2 overflow-visible">Gathering Place</span>
               </h2>
 
               {/* Dynamic Quote Carousel */}

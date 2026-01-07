@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ViewMode } from '../types';
+import churchLogo from '../churchlogo.png';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,11 +26,11 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) =>
               className="flex items-center gap-4 cursor-pointer group" 
               onClick={() => onNavigate(ViewMode.USER_FORM)}
             >
-              <div className="w-12 h-12 bg-indigo-900 rounded-2xl flex items-center justify-center text-amber-400 font-black text-2xl shadow-2xl group-hover:scale-105 transition-transform duration-300">
-                Y
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-105 transition-transform duration-300 bg-white p-1">
+                <img src={churchLogo} alt="Church Logo" className="w-full h-full object-contain" />
               </div>
               <div className="hidden sm:block">
-                <span className={`font-black text-xl tracking-tight block leading-none transition-colors ${isAdminView ? 'text-slate-900' : 'text-white'}`}>
+                <span className={`font-black text-base md:text-lg tracking-tight block leading-normal transition-colors overflow-visible pr-1 ${isAdminView ? 'text-slate-900' : 'text-white'}`}>
                   Gathering Place
                 </span>
                 <span className={`text-[10px] font-black uppercase tracking-[0.2em] block leading-none mt-2 transition-colors ${isAdminView ? 'text-slate-400' : 'text-white/60'}`}>
@@ -79,21 +80,23 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) =>
           <div className="flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="text-center md:text-left">
               <div className="flex items-center gap-3 mb-6 justify-center md:justify-start opacity-60">
-                <div className="w-8 h-8 bg-indigo-900 rounded-lg flex items-center justify-center text-amber-400 font-black text-sm">Y</div>
-                <span className={`font-black tracking-tight text-lg ${isAdminView ? 'text-slate-900' : 'text-white'}`}>Gathering Place</span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white p-0.5">
+                  <img src={churchLogo} alt="Church Logo" className="w-full h-full object-contain" />
+                </div>
+                <span className={`font-black tracking-tight text-sm leading-normal overflow-visible pr-1 ${isAdminView ? 'text-slate-900' : 'text-white'}`}>Gathering Place</span>
               </div>
               <p className={`text-sm max-w-sm font-medium leading-relaxed ${isAdminView ? 'text-slate-400' : 'text-white/40'}`}>
                 Facilitating connection and community through faith and modern technology.
               </p>
             </div>
             <div className="flex flex-col items-center md:items-end gap-6">
-               <div className={`flex gap-10 text-[11px] font-black uppercase tracking-widest ${isAdminView ? 'text-slate-400' : 'text-white/40'}`}>
+              <div className={`flex gap-10 text-[11px] font-black uppercase tracking-widest ${isAdminView ? 'text-slate-400' : 'text-white/40'}`}>
                 <a href="#" className="hover:text-amber-400 transition-colors">Privacy</a>
                 <a href="#" className="hover:text-amber-400 transition-colors">Safety</a>
                 <a href="#" className="hover:text-amber-400 transition-colors">Support</a>
               </div>
               <p className={`text-[10px] font-bold uppercase tracking-widest ${isAdminView ? 'text-slate-300' : 'text-white/20'}`}>
-                © {new Date().getFullYear()} THE CHURCH OF JESUS CHRIST OF LATTER-DAY SAINTS
+                © {new Date().getFullYear()} Abeokuta Nigeria 🇳🇬 Stake
               </p>
             </div>
           </div>
