@@ -89,14 +89,25 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) =>
                 Facilitating connection and community through faith and modern technology.
               </p>
             </div>
-            <div className="flex flex-col items-center md:items-end gap-6">
+              <div className="flex flex-col items-center md:items-end gap-6">
               <div className={`flex gap-10 text-[11px] font-black uppercase tracking-widest ${isAdminView ? 'text-slate-400' : 'text-white/40'}`}>
                 <a href="#" className="hover:text-amber-400 transition-colors">Privacy</a>
                 <a href="#" className="hover:text-amber-400 transition-colors">Safety</a>
                 <a href="#" className="hover:text-amber-400 transition-colors">Support</a>
               </div>
               <p className={`text-[10px] font-bold uppercase tracking-widest ${isAdminView ? 'text-slate-300' : 'text-white/20'}`}>
-                © {new Date().getFullYear()} Abeokuta Nigeria 🇳🇬 Stake
+                © {new Date().getFullYear()} Abeokuta Nigeria&nbsp;
+                <span className="inline-flex items-center gap-2 align-middle">
+                  <span
+                    aria-hidden="true"
+                    style={{ display: 'inline-block', width: 20, height: 14, borderRadius: 2, overflow: 'hidden', verticalAlign: 'middle' }}
+                  >
+                    <span style={{ display: 'inline-block', width: 6.5, height: 14, background: '#008751', float: 'left' }} />
+                    <span style={{ display: 'inline-block', width: 6.5, height: 14, background: '#ffffff', float: 'left' }} />
+                    <span style={{ display: 'inline-block', width: 6.5, height: 14, background: '#008751', float: 'left' }} />
+                  </span>
+                  <span className="uppercase tracking-widest">Stake</span>
+                </span>
               </p>
             </div>
           </div>
