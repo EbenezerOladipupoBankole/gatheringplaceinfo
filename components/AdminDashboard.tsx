@@ -1,15 +1,21 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { User } from 'firebase/auth';
 import { attendanceService } from '../services/attendanceService';
 import { AttendanceRecord, WardStats, MonthlyStats, QuarterlyStats } from '../types';
 import { ADMIN_PASSWORD, RosterMember } from '../constants';
 import AttendanceTable from './AttendanceTable';
 import AnalyticsCharts from './AnalyticsCharts';
 import GeminiInsights from './GeminiInsights';
+import logo from '../image.png';
 
 type AdminTab = 'analytics' | 'records' | 'settings';
 
-const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  user?: User | null;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('analytics');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [wards, setWards] = useState<string[]>([]);
@@ -27,8 +33,9 @@ const AdminDashboard: React.FC = () => {
     refreshData();
   }, []);
 
-  const refreshData = () => {
-    setRecords(attendanceService.getRecords());
+  const refreshData = async () => {
+    const fetchedRecords = await attendanceService.getRecords();
+    setRecords(fetchedRecords);
     setWards(attendanceService.getWards());
     setRoster(attendanceService.getRoster());
   };
@@ -91,9 +98,9 @@ const AdminDashboard: React.FC = () => {
     return Object.entries(counts).map(([quarter, count]) => ({ quarter, count }));
   }, [filteredRecords]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this attendance record?")) {
-      attendanceService.deleteRecord(id);
+      await attendanceService.deleteRecord(id);
       refreshData();
     }
   };
@@ -102,10 +109,10 @@ const AdminDashboard: React.FC = () => {
     setEditingRecord(record);
   };
 
-  const saveEditedRecord = (e: React.FormEvent) => {
+  const saveEditedRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingRecord) {
-      attendanceService.updateRecord(editingRecord.id, editingRecord.full_name, editingRecord.phone_number, editingRecord.ward);
+      await attendanceService.updateRecord(editingRecord.id, editingRecord.full_name, editingRecord.phone_number, editingRecord.ward);
       setEditingRecord(null);
       refreshData();
     }
@@ -173,30 +180,46 @@ const AdminDashboard: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-3 mb-2">
-             <div className="bg-indigo-900 p-2 rounded-xl text-amber-400">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-               </svg>
-             </div>
+             <img src={logo} alt="Logo" className="w-10 h-auto drop-shadow-md" />
              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Admin Console</h2>
           </div>
           <p className="text-slate-500 font-medium ml-12">Manage activity records & member rosters.</p>
         </div>
 
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeTab === tab 
-                ? 'bg-white text-indigo-900 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {tab === 'settings' ? 'Setup' : tab}
-            </button>
-          ))}
+        <div className="flex flex-col items-end gap-4">
+          <div className="flex items-center gap-3 px-2">
+            <div className="text-right hidden md:block">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
+              <p className="text-sm font-bold text-slate-700">{user?.displayName || user?.email?.split('@')[0] || 'Admin'}</p>
+            </div>
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="Profile" 
+                className="w-10 h-10 rounded-full border-2 border-white shadow-md ring-2 ring-slate-100"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-md ring-2 ring-slate-100">
+                {user?.email?.[0]?.toUpperCase() || 'A'}
+              </div>
+            )}
+          </div>
+
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeTab === tab 
+                  ? 'bg-white text-indigo-900 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {tab === 'settings' ? 'Setup' : tab}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
