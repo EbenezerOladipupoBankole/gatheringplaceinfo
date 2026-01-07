@@ -346,7 +346,7 @@ const AttendanceForm: React.FC = () => {
       
       {/* Decorative dots below form */}
       <div className="text-center mt-12 opacity-60">
-        <p className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Latter-day Saint Gathering</p>
+        <p className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Young Single Adult Gathering</p>
       </div>
     </div>
   );
