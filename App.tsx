@@ -155,7 +155,7 @@ const App: React.FC = () => {
               
               <div className="space-y-4 opacity-60 hover:opacity-100 transition-opacity">
                 <p className="text-sm text-white font-black uppercase tracking-[0.4em]">
-                  Jesus is the Way
+                  Jesus Christ is the Way
                 </p>
               </div>
             </div>
