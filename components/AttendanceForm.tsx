@@ -154,10 +154,9 @@ const AttendanceForm: React.FC = () => {
               </svg>
             </div>
             
-            <h2 className="text-3xl font-serif text-slate-900 mb-3 tracking-tight">Welcome Home</h2>
+            <h2 className="text-3xl font-serif text-slate-900 mb-3 tracking-tight">Welcome, {name}</h2>
             <p className="text-slate-500 font-medium mb-10 leading-relaxed text-sm px-4">
-              <span className="text-slate-900 font-bold text-lg block mb-1">{name}</span>
-              Your attendance has been recorded.
+              We are grateful to have you at the gathering place today.
             </p>
 
             <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl mb-8 text-left space-y-3 relative overflow-hidden">
@@ -187,7 +186,7 @@ const AttendanceForm: React.FC = () => {
               onClick={handleReset}
               className="w-full py-4 px-10 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-[0.98] text-xs"
             >
-              Check In Another Person
+              Next Person
             </button>
           </div>
         </div>

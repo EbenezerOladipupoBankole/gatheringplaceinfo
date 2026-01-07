@@ -7,7 +7,6 @@ import { ADMIN_PASSWORD, RosterMember } from '../constants';
 import AttendanceTable from './AttendanceTable';
 import AnalyticsCharts from './AnalyticsCharts';
 import GeminiInsights from './GeminiInsights';
-import logo from '../image.png';
 
 type AdminTab = 'analytics' | 'records' | 'settings';
 
@@ -180,10 +179,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-3 mb-2">
-             <img src={logo} alt="Logo" className="w-10 h-auto drop-shadow-md" />
              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Admin Console</h2>
           </div>
-          <p className="text-slate-500 font-medium ml-12">Manage activity records & member rosters.</p>
+          <p className="text-slate-500 font-medium">Manage activity records & YSAs rosters.</p>
         </div>
 
         <div className="flex flex-col items-end gap-4">
