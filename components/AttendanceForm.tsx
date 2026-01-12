@@ -13,6 +13,15 @@ const SCRIPTURES = [
   { text: "Be still, and know that I am God.", source: "Psalm 46:10" }
 ];
 
+const SKILLS = [
+  'Barbing',
+  'ICT',
+  'Catering',
+  'Shoe Making',
+  'Tailoring',
+  'Hairdressing'
+];
+
 const AttendanceForm: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -20,6 +29,8 @@ const AttendanceForm: React.FC = () => {
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [eventType, setEventType] = useState<'Friday Gathering' | 'Skills Acquisition'>('Friday Gathering');
+  const [skillCategory, setSkillCategory] = useState('');
   const [availableWards, setAvailableWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<any[]>([]);
   const [pastRecords, setPastRecords] = useState<AttendanceRecord[]>([]);
@@ -31,7 +42,7 @@ const AttendanceForm: React.FC = () => {
   const suggestionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setAvailableWards(attendanceService.getWards());
+    setAvailableWards(attendanceService.getWards().sort((a, b) => a.localeCompare(b)));
     setRoster(attendanceService.getRoster());
     attendanceService.getRecords().then(setPastRecords);
   }, []);
@@ -64,6 +75,7 @@ const AttendanceForm: React.FC = () => {
       
       const filtered = allNames
         .filter(n => n.toLowerCase().includes(val.toLowerCase()))
+        .sort((a, b) => a.localeCompare(b))
         .slice(0, 5); 
       
       setSuggestions(filtered);
@@ -86,6 +98,11 @@ const AttendanceForm: React.FC = () => {
       return;
     }
 
+    if (eventType === 'Skills Acquisition' && !skillCategory) {
+      setStatus({ type: 'error', message: 'Please select a skill department.' });
+      return;
+    }
+
     setIsSubmitting(true);
     
     // Create a timeout promise to prevent infinite loading
@@ -95,7 +112,8 @@ const AttendanceForm: React.FC = () => {
 
     try {
       // Race the saveRecord against the timeout
-      const result = await Promise.race([attendanceService.saveRecord(name, phone, ward), timeoutPromise]);
+      // @ts-ignore - Updating signature to include event type and skill
+      const result = await Promise.race([attendanceService.saveRecord(name, phone, ward, eventType, skillCategory), timeoutPromise]);
       if (result.success) {
         setStatus({ type: 'success', message: result.message });
         setDailyScripture(SCRIPTURES[Math.floor(Math.random() * SCRIPTURES.length)]);
@@ -114,6 +132,7 @@ const AttendanceForm: React.FC = () => {
     setName('');
     setPhone('');
     setWard('');
+    setSkillCategory('');
     setIsSubmitting(false);
   };
 
@@ -126,19 +145,21 @@ const AttendanceForm: React.FC = () => {
   });
 
   // Calculate progress
-  const completedSteps = [!!ward, !!name, !!phone].filter(Boolean).length;
-  const progressPercent = (completedSteps / 3) * 100;
+  const requiredFields = [ward, name, phone];
+  if (eventType === 'Skills Acquisition') requiredFields.push(skillCategory);
+  const completedSteps = requiredFields.filter(Boolean).length;
+  const progressPercent = (completedSteps / requiredFields.length) * 100;
 
   if (status.type === 'success') {
     return (
       <div className="max-w-md mx-auto animate-in fade-in zoom-in-95 duration-1000">
-        <div className="bg-white rounded-[2.5rem] p-10 text-center shadow-2xl border border-white/60 relative overflow-hidden">
+        <div className="bg-white rounded-[2rem] p-6 text-center shadow-2xl border border-white/60 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] rounded-full" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full" />
 
           {/* Temple Background for Success View */}
-          <div 
+          <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply grayscale"
             style={{ 
               backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
@@ -148,19 +169,29 @@ const AttendanceForm: React.FC = () => {
           />
 
           <div className="relative z-10">
-            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             
-            <h2 className="text-3xl font-serif text-slate-900 mb-3 tracking-tight">Welcome, {name}</h2>
-            <p className="text-slate-500 font-medium mb-10 leading-relaxed text-sm px-4">
+            <h2 className="text-2xl font-serif text-slate-900 mb-2 tracking-tight">Welcome, {name}</h2>
+            <p className="text-slate-500 font-medium mb-6 leading-relaxed text-xs px-4">
               We are grateful to have you at the gathering place today.
             </p>
 
-            <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl mb-8 text-left space-y-3 relative overflow-hidden">
+            <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl mb-6 text-left space-y-2 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Event</span>
+                <span className="text-sm font-semibold text-slate-800">{eventType}</span>
+              </div>
+              {eventType === 'Skills Acquisition' && skillCategory && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Skill</span>
+                  <span className="text-sm font-semibold text-slate-800">{skillCategory}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ward</span>
                 <span className="text-sm font-semibold text-slate-800">{ward}</span>
@@ -172,7 +203,7 @@ const AttendanceForm: React.FC = () => {
             </div>
 
             {dailyScripture && (
-              <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 px-2">
+              <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 px-2">
                 <p className="text-slate-600 font-serif italic text-lg leading-relaxed mb-3">
                   "{dailyScripture.text}"
                 </p>
@@ -184,7 +215,7 @@ const AttendanceForm: React.FC = () => {
 
             <button 
               onClick={handleReset}
-              className="w-full py-4 px-10 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-[0.98] text-xs"
+              className="w-full py-3 px-10 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-[0.98] text-[10px]"
             >
               Next Person
             </button>
@@ -196,12 +227,12 @@ const AttendanceForm: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto relative px-4 w-full">
-      <div className="bg-white shadow-2xl rounded-[2.5rem] overflow-hidden border border-white/50 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-        <div className="p-8 md:p-12 relative overflow-hidden">
+      <div className="bg-white shadow-2xl rounded-[2rem] overflow-hidden border border-white/50 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+        <div className="p-5 relative overflow-hidden">
           
           {/* Subtle Form Background Image */}
-          <div 
-            className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-multiply grayscale"
+          <div
+            className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-multiply"
             style={{ 
               backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
               backgroundSize: 'cover',
@@ -209,21 +240,85 @@ const AttendanceForm: React.FC = () => {
             }}
           />
 
-          <header className="text-center mb-12 relative z-10">
-            <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-              Attendance Registry
-            </span>
-            <h1 className="text-4xl font-serif text-slate-900 mb-2 tracking-tight">Welcome</h1>
-            <p className="text-slate-400 font-medium text-xs uppercase tracking-widest">{todayStr}</p>
+          <header className="text-center mb-4 relative z-10">
+            <img src={logo} alt="Gathering Place" className="w-10 h-10 mx-auto mb-2 rounded-xl shadow-lg" />
+            <h1 className="text-2xl font-serif text-slate-900 mb-0.5 tracking-tight">Welcome</h1>
+            <p className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">{todayStr}</p>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
-            {/* Step 1: Unit Selection */}
-            <div className="space-y-2 group">
-              <label htmlFor="ward" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+          <form onSubmit={handleSubmit} className="space-y-3 relative z-10">
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-100 rounded-full h-2.5">
+              <div 
+                className="bg-gradient-to-r from-amber-400 to-amber-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+                style={{ width: `${progressPercent}%` }}
+              ></div>
+            </div>
+
+            {/* --- STEP 1: EVENT TYPE --- */}
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Event Type</label>
+            <div className="flex p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setEventType('Friday Gathering')}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  eventType === 'Friday Gathering' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Friday Gathering
+              </button>
+              <button
+                type="button"
+                onClick={() => setEventType('Skills Acquisition')}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  eventType === 'Skills Acquisition' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Skills Acquisition
+              </button>
+            </div>
+            </div>
+
+            {/* Skill Selection (Conditional) */}
+            {eventType === 'Skills Acquisition' && (
+              <div className="space-y-1.5 group animate-in fade-in slide-in-from-top-2 duration-300">
+                <label htmlFor="skill" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+                  Skill Department
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 text-slate-400 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                  </div>
+                  <select 
+                    id="skill"
+                    required
+                    value={skillCategory}
+                    onChange={(e) => setSkillCategory(e.target.value)}
+                    className="w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-xs shadow-sm hover:border-slate-200"
+                  >
+                    <option value="" disabled>Select a skill...</option>
+                    {SKILLS.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* --- STEP 2: UNIT SELECTION --- */}
+            <div className="space-y-1.5 group">
+              <label htmlFor="ward" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
                 Ward / Branch
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-slate-400 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
+                </div>
                 <select 
                   id="ward"
                   required
@@ -233,7 +328,7 @@ const AttendanceForm: React.FC = () => {
                     setName('');
                     setShowSuggestions(false);
                   }}
-                  className="w-full bg-white border-2 border-slate-100 rounded-xl px-4 py-4 focus:ring-0 focus:border-amber-500 outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:border-slate-200"
+                  className="w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-xs shadow-sm hover:border-slate-200"
                 >
                   <option value="" disabled>Select your unit...</option>
                   {availableWards.map(w => (
@@ -248,12 +343,15 @@ const AttendanceForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Step 2: Name Input */}
-            <div className="space-y-2 relative group" ref={suggestionRef}>
-              <label htmlFor="fullName" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+            {/* --- STEP 3: NAME INPUT --- */}
+            <div className="space-y-1.5 relative group" ref={suggestionRef}>
+              <label htmlFor="fullName" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
                 Full Name
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-slate-400 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm12 5a1 1 0 100-2H4a1 1 0 100 2h12z" clipRule="evenodd" /></svg>
+                </div>
                 <input 
                   id="fullName"
                   type="text" 
@@ -262,7 +360,7 @@ const AttendanceForm: React.FC = () => {
                   placeholder={ward ? "Type your name..." : "Select unit first"}
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`w-full bg-white border-2 border-slate-100 rounded-xl px-4 py-4 focus:ring-0 focus:border-amber-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-sm shadow-sm hover:border-slate-200 ${!ward ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                  className={`w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-xs shadow-sm hover:border-slate-200 ${!ward ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                   disabled={!ward}
                 />
               </div>
@@ -286,12 +384,15 @@ const AttendanceForm: React.FC = () => {
               )}
             </div>
 
-            {/* Step 3: Phone Number */}
-            <div className="space-y-2 group">
-              <label htmlFor="phone" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+            {/* --- STEP 4: PHONE NUMBER --- */}
+            <div className="space-y-1.5 group">
+              <label htmlFor="phone" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
                 Phone Number
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-slate-400 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
+                </div>
                 <input 
                   id="phone"
                   type="tel" 
@@ -299,7 +400,7 @@ const AttendanceForm: React.FC = () => {
                   placeholder="080..."
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className={`w-full bg-white border-2 border-slate-100 rounded-xl px-4 py-4 focus:ring-0 focus:border-amber-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-sm shadow-sm hover:border-slate-200 ${!ward ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                  className={`w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-xs shadow-sm hover:border-slate-200 ${!ward ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                   disabled={!ward}
                 />
               </div>
@@ -308,7 +409,7 @@ const AttendanceForm: React.FC = () => {
             <button 
               type="submit" 
               disabled={isSubmitting || !ward || !name || !phone}
-              className={`w-full py-5 rounded-xl font-black text-xs text-white transition-all transform shadow-xl relative group active:scale-[0.98] overflow-hidden mt-8 ${
+              className={`w-full py-3 rounded-xl font-black text-[10px] text-white transition-all transform shadow-xl relative group active:scale-[0.98] overflow-hidden mt-4 ${
                 (isSubmitting || !ward || !name || !phone)
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                 : 'bg-slate-900 hover:bg-black'
@@ -324,7 +425,10 @@ const AttendanceForm: React.FC = () => {
                     <span className="tracking-widest">SAVING...</span>
                   </>
                 ) : (
+                <>
                   <span className="tracking-[0.2em]">CONFIRM ATTENDANCE</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                </>
                 )}
               </div>
             </button>
@@ -344,8 +448,10 @@ const AttendanceForm: React.FC = () => {
       </div>
       
       {/* Decorative dots below form */}
-      <div className="text-center mt-12 opacity-60">
-        <p className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">Young Single Adult Gathering</p>
+      <div className="text-center mt-6 opacity-60">
+        <p className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">
+          {eventType === 'Friday Gathering' ? 'Young Single Adult Gathering' : 'YSA Skills Acquisition'}
+        </p>
       </div>
     </div>
   );

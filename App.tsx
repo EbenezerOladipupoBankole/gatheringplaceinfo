@@ -5,7 +5,7 @@ import AttendanceForm from './components/AttendanceForm';
 import AdminDashboard from './components/AdminDashboard';
 import { ViewMode } from './types';
 import { auth } from './services/firebaseConfig';
-import { GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, User } from 'firebase/auth';
 import logo from './image.png';
 
 const SPIRITUAL_QUOTES = [
@@ -92,75 +92,78 @@ const App: React.FC = () => {
     switch (view) {
       case ViewMode.USER_FORM:
         return (
-          <div className="py-12 md:py-20 flex flex-col items-center">
-            <div className="w-full max-w-5xl px-4 mb-12 animate-in fade-in zoom-in duration-1000">
-               <div className="relative w-full h-64 md:h-96 rounded-[3rem] overflow-hidden shadow-2xl border border-white/10 group">
-                 <img 
-                   src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=2000&auto=format&fit=crop" 
-                   alt="YSA Gathering" 
-                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                 />
-                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-                 <div className="absolute bottom-6 left-8 md:bottom-10 md:left-12">
-                    <span className="px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest mb-3 inline-block">
-                      Young Adults and Gathering Place
-                    </span>
-                    <p className="text-white font-bold text-xl md:text-3xl tracking-tight drop-shadow-lg max-w-lg">
-                      Strengthening Faith Together
+          <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              
+              {/* Left Column: Enterprise Hero Content */}
+              <div className="text-center lg:text-left space-y-6 animate-in fade-in slide-in-from-left-10 duration-1000">
+                
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-900/40 border border-indigo-500/30 backdrop-blur-md text-indigo-100 mx-auto lg:mx-0 shadow-lg">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Abeokuta Nigeria Stake</span>
+                </div>
+
+                {/* Main Heading */}
+                <div className="space-y-4">
+                  <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-2xl">
+                    Gathering <br/>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200">Place</span>
+                  </h1>
+                  <p className="text-lg md:text-xl text-slate-300 font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed drop-shadow-md">
+                    Strengthening faith and fostering unity among Young Single Adults through inspired connection and learning.
+                  </p>
+                </div>
+
+                {/* Quote Card (Enterprise Testimonial Style) */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:bg-white/10 transition-colors duration-500 shadow-2xl">
+                  <div className="absolute top-0 right-0 p-6 opacity-10">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" className="text-white transform rotate-12">
+                      <path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.0166 21L5.0166 18C5.0166 16.8954 5.91203 16 7.0166 16H10.0166C10.5689 16 11.0166 15.5523 11.0166 15V9C11.0166 8.44772 10.5689 8 10.0166 8H6.0166C5.46432 8 5.0166 8.44772 5.0166 9V11C5.0166 11.5523 4.56889 12 4.0166 12H3.0166V5H13.0166V15C13.0166 18.3137 10.3303 21 7.0166 21H5.0166Z" />
+                    </svg>
+                  </div>
+                  
+                  <div className={`transition-all duration-700 ${fadeTrigger ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                    <p className="text-xl text-white font-serif italic leading-relaxed mb-6 relative z-10">
+                      "{SPIRITUAL_QUOTES[quoteIndex].text}"
                     </p>
-                 </div>
-               </div>
-            </div>
-            <div className="text-center mb-16 max-w-4xl px-4 animate-in fade-in slide-in-from-top-10 duration-1000">
-              {/* Regional Badge */}
-              <div className="inline-flex items-center gap-3 px-6 py-2.5 mb-10 rounded-full bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl group cursor-default">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]"></span>
-                <span className="text-[10px] font-black text-white/90 uppercase tracking-[0.4em] group-hover:tracking-[0.5em] transition-all">Abeokuta Nigeria Stake</span>
-              </div>
-              
-              <p className="text-[11px] font-bold text-white/70 mb-10 uppercase tracking-wider">
-                The Church Of Jesus Christ Of Latter-day Saints
-              </p>
-              
-              {/* Main Headline */}
-              <h2 className="text-4xl md:text-6xl font-black text-white mb-10 tracking-tight leading-[0.95] drop-shadow-[0_20px_20px_rgba(0,0,0,0.6)] overflow-visible md:pr-4">
-                Welcome to <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 italic inline-block pr-2 overflow-visible">Gathering Place</span>
-              </h2>
-
-              {/* Dynamic Quote Carousel */}
-              <div className="max-w-2xl mx-auto relative mb-16 min-h-[180px] flex flex-col justify-center">
-                 <div className={`transition-all duration-1000 transform ${fadeTrigger ? 'opacity-100 translate-y-0 blur-0' : 'opacity-0 -translate-y-4 blur-xl'}`}>
-                    <div className="absolute -top-12 -left-8 text-amber-400/10 text-[12rem] font-serif select-none pointer-events-none">“</div>
-                    
-                    <div className="relative z-10 space-y-4 px-8">
-                       <p className="text-3xl md:text-4xl text-white/95 font-medium leading-tight drop-shadow-2xl italic tracking-tight">
-                          {SPIRITUAL_QUOTES[quoteIndex].text}
-                       </p>
-                       
-                       <div className="flex flex-col items-center gap-2 pt-4">
-                          <div className="h-px w-12 bg-amber-400/40" />
-                          <p className="text-[11px] font-black text-amber-400 uppercase tracking-[0.6em]">
-                            {SPIRITUAL_QUOTES[quoteIndex].source}
-                          </p>
-                          <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em]">
-                             {SPIRITUAL_QUOTES[quoteIndex].context}
-                          </span>
-                       </div>
+                    <div className="flex items-center gap-4">
+                      <div className="h-px w-12 bg-amber-400/50"></div>
+                      <div>
+                        <p className="text-xs font-black text-amber-400 uppercase tracking-widest">{SPIRITUAL_QUOTES[quoteIndex].source}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{SPIRITUAL_QUOTES[quoteIndex].context}</p>
+                      </div>
                     </div>
+                  </div>
+                </div>
 
-                    <div className="absolute -bottom-20 -right-8 text-amber-400/10 text-[12rem] font-serif select-none pointer-events-none rotate-180">“</div>
-                 </div>
+                {/* Stats / Trust Indicators */}
+                <div className="flex items-center justify-center lg:justify-start gap-8 pt-4 opacity-80">
+                   <div className="text-left">
+                      <p className="text-2xl font-black text-white">100+</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active YSAs</p>
+                   </div>
+                   <div className="w-px h-8 bg-white/10"></div>
+                   <div className="text-left">
+                      <p className="text-2xl font-black text-white">6</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Skill Programs</p>
+                   </div>
+                   <div className="w-px h-8 bg-white/10"></div>
+                   <div className="text-left">
+                      <p className="text-2xl font-black text-white">Weekly</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gatherings</p>
+                   </div>
+                </div>
               </div>
-              
-              <div className="space-y-4 opacity-60 hover:opacity-100 transition-opacity">
-                <p className="text-sm text-white font-black uppercase tracking-[0.4em]">
-                  Jesus Christ is the Way
-                </p>
+
+              {/* Right Column: Form */}
+              <div className="w-full max-w-md mx-auto lg:ml-auto animate-in fade-in slide-in-from-right-10 duration-1000 delay-200">
+                <AttendanceForm />
               </div>
             </div>
-            
-            <AttendanceForm />
           </div>
         );
 

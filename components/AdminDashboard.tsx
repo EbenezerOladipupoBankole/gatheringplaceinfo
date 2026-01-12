@@ -16,6 +16,7 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('analytics');
+  const [dashboardType, setDashboardType] = useState<'Friday Gathering' | 'Skills Acquisition'>('Friday Gathering');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [wards, setWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
@@ -43,9 +44,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     return records.filter(r => {
       const isAfter = filterDateStart ? r.date >= filterDateStart : true;
       const isBefore = filterDateEnd ? r.date <= filterDateEnd : true;
-      return isAfter && isBefore;
+      // Default to 'Friday Gathering' if eventType is missing (backward compatibility)
+      const typeMatch = (r.eventType || 'Friday Gathering') === dashboardType;
+      return isAfter && isBefore && typeMatch;
     });
-  }, [records, filterDateStart, filterDateEnd]);
+  }, [records, filterDateStart, filterDateEnd, dashboardType]);
 
   const wardData = useMemo<WardStats[]>(() => {
     const counts: Record<string, number> = {};
@@ -74,15 +77,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
   }, [roster, wards]);
 
-  const monthlyData = useMemo<MonthlyStats[]>(() => {
+  const dailyData = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredRecords.forEach(r => {
-      const month = r.date.substring(0, 7);
-      counts[month] = (counts[month] || 0) + 1;
+      counts[r.date] = (counts[r.date] || 0) + 1;
     });
     return Object.entries(counts)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([month, count]) => ({ month, count }));
+      .map(([date, count]) => ({ date, count }));
   }, [filteredRecords]);
 
   const quarterlyData = useMemo<QuarterlyStats[]>(() => {
@@ -95,6 +97,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       else counts['Q4']++;
     });
     return Object.entries(counts).map(([quarter, count]) => ({ quarter, count }));
+  }, [filteredRecords]);
+
+  const skillsData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredRecords.forEach(r => {
+      if (r.skillCategory) {
+        counts[r.skillCategory] = (counts[r.skillCategory] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
   }, [filteredRecords]);
 
   const handleDelete = async (id: string) => {
@@ -176,7 +190,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   return (
     <div className="space-y-8 pb-20">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-3 mb-2">
              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Admin Console</h2>
@@ -184,7 +198,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           <p className="text-slate-500 font-medium">Manage activity records & YSAs rosters.</p>
         </div>
 
-        <div className="flex flex-col items-end gap-4">
+          <div className="flex flex-col items-end gap-4">
           <div className="flex items-center gap-3 px-2">
             <div className="text-right hidden md:block">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
@@ -218,8 +232,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               </button>
             ))}
           </div>
-        </div>
+          </div>
       </header>
+
+      {/* Dashboard Type Toggle */}
+      <div className="flex justify-center">
+        <div className="bg-slate-100 p-1 rounded-xl inline-flex shadow-inner">
+          <button
+            onClick={() => setDashboardType('Friday Gathering')}
+            className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+              dashboardType === 'Friday Gathering'
+                ? 'bg-white text-indigo-900 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Friday Gathering
+          </button>
+          <button
+            onClick={() => setDashboardType('Skills Acquisition')}
+            className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+              dashboardType === 'Skills Acquisition'
+                ? 'bg-white text-indigo-900 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Skills Acquisition
+          </button>
+        </div>
+      </div>
 
       {editingRecord && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -268,25 +308,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
       {activeTab === 'analytics' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Total Check-ins" value={filteredRecords.length.toString()} trend="History" icon="users" color="blue" />
             <KpiCard title="Engaged Units" value={wardData.length.toString()} trend="Active" icon="home" color="emerald" />
-            <KpiCard title="Monthly Peak" value={(monthlyData.reduce((max, d) => Math.max(max, d.count), 0)).toString()} trend="Record" icon="chart" color="indigo" />
+            <KpiCard title="Daily Peak" value={(dailyData.reduce((max, d) => Math.max(max, d.count), 0)).toString()} trend="Record" icon="chart" color="indigo" />
             <KpiCard title="Avg per Week" value={Math.round(filteredRecords.length / 4).toString()} trend="Average" icon="calendar" color="slate" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <ChartContainer title="Growth Trend">
-                <AnalyticsCharts type="line" data={monthlyData} dataKey="count" xKey="month" />
+            <div className="lg:col-span-2 space-y-6">
+              <ChartContainer title="Daily Attendance">
+                <AnalyticsCharts type="line" data={dailyData} dataKey="count" xKey="date" />
               </ChartContainer>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <ChartContainer title="Unit Participation">
                   <AnalyticsCharts type="bar" data={wardData} dataKey="count" xKey="ward" />
                 </ChartContainer>
-                <ChartContainer title="Quarterly View">
-                   <AnalyticsCharts type="bar" data={quarterlyData} dataKey="count" xKey="quarter" />
-                </ChartContainer>
+                {dashboardType === 'Skills Acquisition' ? (
+                  <ChartContainer title="Skills Distribution">
+                    <AnalyticsCharts type="bar" data={skillsData} dataKey="count" xKey="name" />
+                  </ChartContainer>
+                ) : (
+                  <ChartContainer title="Quarterly View">
+                     <AnalyticsCharts type="bar" data={quarterlyData} dataKey="count" xKey="quarter" />
+                  </ChartContainer>
+                )}
               </div>
             </div>
             <div className="lg:col-span-1">
@@ -327,13 +373,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               Export Records
             </button>
           </div>
-          <AttendanceTable records={filteredRecords} onDelete={handleDelete} onEdit={handleEditRecord} />
+          <AttendanceTable 
+            records={filteredRecords} 
+            onDelete={handleDelete} 
+            onEdit={handleEditRecord} 
+            showSkill={dashboardType === 'Skills Acquisition'}
+          />
         </div>
       )}
 
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+          <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm">
             <h3 className="text-xl font-black text-slate-900 mb-6">Access Credentials</h3>
             <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Admin Password</label>
@@ -341,7 +392,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
+          <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
             <h3 className="text-xl font-black text-slate-900 mb-6">Manage Units</h3>
             <form onSubmit={handleAddWard} className="flex gap-2 mb-4">
               <input 
@@ -365,7 +416,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="md:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+          <div className="md:col-span-2 bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm">
             <h3 className="text-2xl font-black text-slate-900 mb-8">Roster Management</h3>
             
             {/* Add Member Form */}
@@ -463,7 +514,7 @@ const KpiCard: React.FC<{ title: string; value: string; trend: string; icon: str
 };
 
 const ChartContainer: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col min-h-[420px]">
+  <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col min-h-[260px] md:min-h-[420px]">
     <div className="mb-8">
       <h3 className="text-xl font-black text-slate-900 tracking-tight">{title}</h3>
     </div>

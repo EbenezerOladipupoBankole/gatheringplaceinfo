@@ -32,22 +32,27 @@ export const attendanceService = {
     }
   },
 
-  saveRecord: async (name: string, phone: string, ward: string): Promise<{ success: boolean; message: string }> => {
+  saveRecord: async (name: string, phone: string, ward: string, eventType?: string, skillCategory?: string): Promise<{ success: boolean; message: string }> => {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' });
 
     try {
       // Try to check for duplicates (This works for Admins, but might fail for Public due to security rules)
       try {
-        const q = query(
-          collection(db, RECORDS_COLLECTION), 
+        const constraints = [
           where("full_name", "==", name),
           where("date", "==", today)
-        );
+        ];
+
+        if (eventType) {
+          constraints.push(where("eventType", "==", eventType));
+        }
+
+        const q = query(collection(db, RECORDS_COLLECTION), ...constraints);
         
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-          return { success: false, message: 'You have already marked attendance for today.' };
+          return { success: false, message: 'You have already marked attendance for this event today.' };
         }
       } catch (permissionError) {
         // If public user can't read (Permission Denied), ignore duplicate check and proceed to save
@@ -55,13 +60,18 @@ export const attendanceService = {
       }
 
       // Add new record
-      await addDoc(collection(db, RECORDS_COLLECTION), {
+      const recordData: any = {
         full_name: name,
         phone_number: phone,
         ward: ward,
         date: today,
         timestamp: Date.now()
-      });
+      };
+
+      if (eventType) recordData.eventType = eventType;
+      if (skillCategory) recordData.skillCategory = skillCategory;
+
+      await addDoc(collection(db, RECORDS_COLLECTION), recordData);
       return { success: true, message: 'Attendance marked successfully!' };
     } catch (e) {
       console.error("Error saving record:", e);

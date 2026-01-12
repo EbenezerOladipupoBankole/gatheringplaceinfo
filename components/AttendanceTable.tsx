@@ -6,12 +6,13 @@ interface AttendanceTableProps {
   records: AttendanceRecord[];
   onDelete: (id: string) => void;
   onEdit: (record: AttendanceRecord) => void;
+  showSkill?: boolean;
 }
 
-const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, onEdit }) => {
+const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, onEdit, showSkill }) => {
   return (
     <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mt-8">
-      <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
         <div>
           <h3 className="text-xl font-black text-slate-900 tracking-tight">Records Ledger</h3>
           <p className="text-sm text-slate-400 font-medium">Detailed history of all check-ins</p>
@@ -26,17 +27,18 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100">
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Name</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Phone</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ward</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date</th>
-              <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
+              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Name</th>
+              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Phone</th>
+              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ward</th>
+              {showSkill && <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Skill</th>}
+              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date</th>
+              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {records.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-8 py-20 text-center">
+                <td colSpan={showSkill ? 6 : 5} className="px-8 py-20 text-center">
                   <div className="flex flex-col items-center">
                     <p className="text-slate-300 font-black uppercase tracking-widest text-xs">No records found</p>
                   </div>
@@ -45,25 +47,32 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
             ) : (
               [...records].reverse().map((record) => (
                 <tr key={record.id} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-8 py-5">
+                  <td className="px-4 sm:px-8 py-4">
                     <span className="font-bold text-slate-700 tracking-tight">{record.full_name}</span>
                   </td>
-                  <td className="px-8 py-5">
+                  <td className="px-4 sm:px-8 py-4">
                     <span className="text-slate-500 text-sm font-semibold tabular-nums">
                       {record.phone_number || "---"}
                     </span>
                   </td>
-                  <td className="px-8 py-5">
+                  <td className="px-4 sm:px-8 py-4">
                     <span className="bg-white text-blue-600 border border-blue-100 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-tighter shadow-sm">
                       {record.ward}
                     </span>
                   </td>
-                  <td className="px-8 py-5">
+                  {showSkill && (
+                    <td className="px-4 sm:px-8 py-4">
+                      <span className="text-slate-700 text-sm font-bold">
+                        {record.skillCategory || '---'}
+                      </span>
+                    </td>
+                  )}
+                  <td className="px-4 sm:px-8 py-4">
                     <span className="text-slate-500 text-sm font-medium">
                       {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   </td>
-                  <td className="px-8 py-5 text-right flex justify-end gap-2">
+                  <td className="px-4 sm:px-8 py-4 text-right flex justify-end gap-2">
                     <button 
                       onClick={() => onEdit(record)}
                       className="text-slate-300 hover:text-indigo-600 p-2 rounded-xl hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"

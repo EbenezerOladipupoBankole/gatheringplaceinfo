@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ViewMode } from '../types';
 import churchLogo from '../churchlogo.png';
 
@@ -11,9 +11,30 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) => {
   const isAdminView = currentView === ViewMode.ADMIN_DASHBOARD;
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          setInstallPrompt(null);
+        }
+      });
+    }
+  };
 
   return (
-    <div className={`min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900 ${isAdminView ? 'bg-slate-50/90 backdrop-blur-md' : ''}`}>
+    <div className={`min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden ${isAdminView ? 'bg-slate-50/90 backdrop-blur-md' : ''}`}>
       {/* Navigation */}
       <nav className={`sticky top-0 z-50 transition-all duration-500 border-b ${
         isAdminView 
@@ -42,6 +63,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) =>
             <div className={`flex items-center gap-2 p-1.5 rounded-2xl border backdrop-blur-md transition-colors ${
               isAdminView ? 'bg-slate-100/60 border-slate-200' : 'bg-white/5 border-white/10'
             }`}>
+              {installPrompt && (
+                <button
+                  onClick={handleInstallClick}
+                  className="hidden md:block px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-amber-500 hover:bg-amber-500/10 transition-colors"
+                >
+                  Install App
+                </button>
+              )}
               <button 
                 onClick={() => onNavigate(ViewMode.USER_FORM)}
                 className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all duration-300 ${

@@ -6,6 +6,8 @@ export interface AttendanceRecord {
   ward: string;
   date: string; // YYYY-MM-DD
   timestamp: number;
+  eventType?: 'Friday Gathering' | 'Skills Acquisition';
+  skillCategory?: string;
 }
 
 export interface WardStats {
