@@ -7,9 +7,10 @@ interface AttendanceTableProps {
   onDelete: (id: string) => void;
   onEdit: (record: AttendanceRecord) => void;
   showSkill?: boolean;
+  subCategoryLabel?: string;
 }
 
-const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, onEdit, showSkill }) => {
+const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, onEdit, showSkill, subCategoryLabel }) => {
   return (
     <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mt-8">
       <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -30,7 +31,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
               <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Name</th>
               <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Phone</th>
               <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ward</th>
-              {showSkill && <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Skill</th>}
+              {(showSkill || subCategoryLabel) && <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{subCategoryLabel || 'Skill'}</th>}
               <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date</th>
               <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
             </tr>
@@ -38,7 +39,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
           <tbody className="divide-y divide-slate-100">
             {records.length === 0 ? (
               <tr>
-                <td colSpan={showSkill ? 6 : 5} className="px-8 py-20 text-center">
+                <td colSpan={(showSkill || subCategoryLabel) ? 6 : 5} className="px-8 py-20 text-center">
                   <div className="flex flex-col items-center">
                     <p className="text-slate-300 font-black uppercase tracking-widest text-xs">No records found</p>
                   </div>
@@ -60,7 +61,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
                       {record.ward}
                     </span>
                   </td>
-                  {showSkill && (
+                  {(showSkill || subCategoryLabel) && (
                     <td className="px-4 sm:px-8 py-4">
                       <span className="text-slate-700 text-sm font-bold">
                         {record.skillCategory || '---'}

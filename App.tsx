@@ -53,6 +53,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeTrigger, setFadeTrigger] = useState(true);
+  const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
 
   // Quote rotation logic
   useEffect(() => {
@@ -91,86 +92,140 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (view) {
       case ViewMode.USER_FORM:
+        if (selectedProgram) {
+          let eventType: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' = 'Friday Gathering';
+          if (selectedProgram === 'skills') eventType = 'Skills Acquisition';
+          else if (selectedProgram === 'cluster') eventType = 'Institute Cluster';
+          else if (selectedProgram === 'missionary') eventType = 'Missionary Preparatory Class';
+
+          return (
+            <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center justify-center py-8 px-4 relative z-10 bg-slate-50">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-100/50 blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-amber-100/50 blur-[120px]" />
+              </div>
+              <button 
+                onClick={() => setSelectedProgram(null)}
+                className="mb-8 px-6 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-900 transition-all flex items-center gap-2 font-bold text-sm border border-slate-200 shadow-sm hover:shadow-md relative z-20"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to Programs
+              </button>
+              <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <AttendanceForm preselectedEvent={eventType} />
+              </div>
+            </div>
+          );
+        }
+
         return (
-          <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-              
-              {/* Left Column: Enterprise Hero Content */}
-              <div className="text-center lg:text-left space-y-6 animate-in fade-in slide-in-from-left-10 duration-1000">
-                
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-900/40 border border-indigo-500/30 backdrop-blur-md text-indigo-100 mx-auto lg:mx-0 shadow-lg">
+          <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10 bg-slate-50">
+            {/* Background Ambience */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl">
+                  <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-200/20 blur-[120px] mix-blend-multiply" />
+                  <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-amber-200/20 blur-[120px] mix-blend-multiply" />
+               </div>
+               <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+            </div>
+
+            {/* Header Section */}
+            <div className="text-center max-w-3xl mx-auto mb-16 space-y-6 animate-in fade-in slide-in-from-top-8 duration-1000">
+               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-indigo-100 text-indigo-700 shadow-sm relative z-20">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-widest">Abeokuta Nigeria Stake</span>
-                </div>
+               </div>
+               
+               <h1 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tight leading-tight relative z-20">
+                 Welcome to <br/>
+                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 drop-shadow-sm">Gathering Place</span>
+               </h1>
+               <p className="text-lg md:text-xl text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed relative z-20">
+                 Select a program below to mark your attendance.
+               </p>
+            </div>
 
-                {/* Main Heading */}
-                <div className="space-y-4">
-                  <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-2xl">
-                    Gathering <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200">Place</span>
-                  </h1>
-                  <p className="text-lg md:text-xl text-slate-300 font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed drop-shadow-md">
-                    Strengthening faith and fostering unity among Young Single Adults through inspired connection and learning.
-                  </p>
-                </div>
-
-                {/* Quote Card (Enterprise Testimonial Style) */}
-                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 relative overflow-hidden group hover:bg-white/10 transition-colors duration-500 shadow-2xl">
-                  <div className="absolute top-0 right-0 p-6 opacity-10">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" className="text-white transform rotate-12">
-                      <path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11C14.017 11.5523 13.5693 12 13.017 12H12.017V5H22.017V15C22.017 18.3137 19.3307 21 16.017 21H14.017ZM5.0166 21L5.0166 18C5.0166 16.8954 5.91203 16 7.0166 16H10.0166C10.5689 16 11.0166 15.5523 11.0166 15V9C11.0166 8.44772 10.5689 8 10.0166 8H6.0166C5.46432 8 5.0166 8.44772 5.0166 9V11C5.0166 11.5523 4.56889 12 4.0166 12H3.0166V5H13.0166V15C13.0166 18.3137 10.3303 21 7.0166 21H5.0166Z" />
-                    </svg>
-                  </div>
-                  
-                  <div className={`transition-all duration-700 ${fadeTrigger ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <p className="text-xl text-white font-serif italic leading-relaxed mb-6 relative z-10">
-                      "{SPIRITUAL_QUOTES[quoteIndex].text}"
-                    </p>
-                    <div className="flex items-center gap-4">
-                      <div className="h-px w-12 bg-amber-400/50"></div>
-                      <div>
-                        <p className="text-xs font-black text-amber-400 uppercase tracking-widest">{SPIRITUAL_QUOTES[quoteIndex].source}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{SPIRITUAL_QUOTES[quoteIndex].context}</p>
-                      </div>
+            {/* Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl px-4">
+              {[
+                {
+                  id: 'skills',
+                  title: 'Skills Acquisition',
+                  day: 'Tuesday',
+                  sub: 'Weekly Class',
+                  img: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&auto=format&fit=crop&q=60',
+                  desc: 'Vocational training and self-reliance skills.'
+                },
+                {
+                  id: 'cluster',
+                  title: 'Institute Cluster',
+                  day: 'Thursday',
+                  sub: 'Odeda & Obantoko',
+                  img: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800&auto=format&fit=crop&q=60',
+                  desc: 'Cluster gatherings for Odeda and Obantoko.'
+                },
+                {
+                  id: 'institute',
+                  title: 'Institute of Religion',
+                  day: 'Friday',
+                  sub: 'Weekly Class',
+                  img: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=60',
+                  desc: 'Standard Institute of Religion classes.'
+                },
+                {
+                  id: 'missionary',
+                  title: 'Missionary Prep',
+                  day: 'Saturday',
+                  sub: 'Weekly Class',
+                  img: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?w=800&auto=format&fit=crop&q=60',
+                  desc: 'Preparing prospective missionaries for service.'
+                }
+              ].map((program, idx) => (
+                <button
+                  key={program.id}
+                  onClick={() => setSelectedProgram(program.id)}
+                  className={`group relative flex flex-col overflow-hidden rounded-[2.5rem] bg-white shadow-xl shadow-slate-200/60 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 hover:-translate-y-2 text-left animate-in fade-in slide-in-from-bottom-8 ring-1 ring-slate-100`}
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
+                  <div className="h-56 w-full overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent z-10"/>
+                    <img 
+                      src={program.img} 
+                      alt={program.title}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute bottom-4 left-4 z-20">
+                      <span className="px-4 py-1.5 rounded-full bg-white/95 backdrop-blur text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-lg">
+                        {program.day}
+                      </span>
                     </div>
                   </div>
-                </div>
-
-                {/* Stats / Trust Indicators */}
-                <div className="flex items-center justify-center lg:justify-start gap-8 pt-4 opacity-80">
-                   <div className="text-left">
-                      <p className="text-2xl font-black text-white">100+</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active YSAs</p>
-                   </div>
-                   <div className="w-px h-8 bg-white/10"></div>
-                   <div className="text-left">
-                      <p className="text-2xl font-black text-white">6</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Skill Programs</p>
-                   </div>
-                   <div className="w-px h-8 bg-white/10"></div>
-                   <div className="text-left">
-                      <p className="text-2xl font-black text-white">Weekly</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gatherings</p>
-                   </div>
-                </div>
-              </div>
-
-              {/* Right Column: Form */}
-              <div className="w-full max-w-md mx-auto lg:ml-auto animate-in fade-in slide-in-from-right-10 duration-1000 delay-200">
-                <AttendanceForm />
-              </div>
+                  <div className="p-8 flex-1 flex flex-col bg-white relative z-20">
+                    <h3 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors tracking-tight">
+                      {program.title}
+                    </h3>
+                    <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-4">
+                      {program.sub}
+                    </p>
+                    <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                      {program.desc}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         );
 
       case ViewMode.ADMIN_LOGIN:
         return (
-          <div className="max-w-md mx-auto py-24 px-4">
-            <div className="glass p-12 rounded-[3.5rem] border border-white/40 shadow-2xl shadow-black/40">
+          <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 bg-white">
+            <div className="w-full max-w-md bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-2xl">
               <h2 className="text-3xl font-black text-slate-900 mb-2 text-center tracking-tight">Admin Dashboard</h2>
               <p className="text-slate-500 mb-12 text-center font-semibold">Priesthood leader Only</p>
               
@@ -178,7 +233,7 @@ const App: React.FC = () => {
                 {authError && <p className="text-red-600 text-xs font-black text-center animate-bounce">{authError}</p>}
                 <button 
                   onClick={handleAdminLogin}
-                  className="w-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-black py-5 px-4 rounded-[1.5rem] shadow-xl transition-all active:scale-[0.98] uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-4"
+                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 font-black py-5 px-4 rounded-[1.5rem] shadow-lg transition-all active:scale-[0.98] uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-4"
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />

@@ -14,15 +14,25 @@ interface AdminDashboardProps {
   user?: User | null;
 }
 
+const SKILLS = [
+  'Barbing',
+  'ICT',
+  'Catering',
+  'Shoe Making',
+  'Tailoring',
+  'Hairdressing'
+];
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('analytics');
-  const [dashboardType, setDashboardType] = useState<'Friday Gathering' | 'Skills Acquisition'>('Friday Gathering');
+  const [dashboardType, setDashboardType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class'>('Friday Gathering');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [wards, setWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
   
   const [filterDateStart, setFilterDateStart] = useState('');
   const [filterDateEnd, setFilterDateEnd] = useState('');
+  const [filterSkill, setFilterSkill] = useState('');
 
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
   const [newWardName, setNewWardName] = useState('');
@@ -46,9 +56,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const isBefore = filterDateEnd ? r.date <= filterDateEnd : true;
       // Default to 'Friday Gathering' if eventType is missing (backward compatibility)
       const typeMatch = (r.eventType || 'Friday Gathering') === dashboardType;
-      return isAfter && isBefore && typeMatch;
+      
+      const skillMatch = dashboardType === 'Skills Acquisition' && filterSkill 
+        ? r.skillCategory === filterSkill 
+        : true;
+
+      return isAfter && isBefore && typeMatch && skillMatch;
     });
-  }, [records, filterDateStart, filterDateEnd, dashboardType]);
+  }, [records, filterDateStart, filterDateEnd, dashboardType, filterSkill]);
 
   const wardData = useMemo<WardStats[]>(() => {
     const counts: Record<string, number> = {};
@@ -235,30 +250,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           </div>
       </header>
 
-      {/* Dashboard Type Toggle */}
-      <div className="flex justify-center">
-        <div className="bg-slate-100 p-1 rounded-xl inline-flex shadow-inner">
+      {/* Program Selector */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { id: 'Friday Gathering', label: 'Institute of Religion', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+          { id: 'Skills Acquisition', label: 'Skills Acquisition', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
+          { id: 'Institute Cluster', label: 'Institute Cluster', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
+          { id: 'Missionary Preparatory Class', label: 'Missionary Prep', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+        ].map((program) => (
           <button
-            onClick={() => setDashboardType('Friday Gathering')}
-            className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              dashboardType === 'Friday Gathering'
-                ? 'bg-white text-indigo-900 shadow-sm'
-                : 'text-slate-400 hover:text-slate-600'
+            key={program.id}
+            onClick={() => setDashboardType(program.id as any)}
+            className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 text-center group ${
+              dashboardType === program.id
+                ? 'bg-indigo-900 border-indigo-900 text-white shadow-lg scale-[1.02]'
+                : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-200 hover:bg-slate-50'
             }`}
           >
-            Friday Gathering
+            <div className={`p-2 rounded-full transition-colors ${dashboardType === program.id ? 'bg-white/10' : 'bg-slate-100 group-hover:bg-white'}`}>
+               {program.icon}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">{program.label}</span>
           </button>
-          <button
-            onClick={() => setDashboardType('Skills Acquisition')}
-            className={`px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              dashboardType === 'Skills Acquisition'
-                ? 'bg-white text-indigo-900 shadow-sm'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            Skills Acquisition
-          </button>
-        </div>
+        ))}
       </div>
 
       {editingRecord && (
@@ -308,6 +322,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
       {activeTab === 'analytics' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {dashboardType === 'Skills Acquisition' && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {SKILLS.map(skill => {
+                const count = filteredRecords.filter(r => r.skillCategory === skill).length;
+                return (
+                  <div key={skill} className="bg-white p-4 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center hover:shadow-md transition-shadow">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 text-center">{skill}</span>
+                    <span className="text-2xl font-black text-slate-900">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard title="Total Check-ins" value={filteredRecords.length.toString()} trend="History" icon="users" color="blue" />
             <KpiCard title="Engaged Units" value={wardData.length.toString()} trend="Active" icon="home" color="emerald" />
@@ -324,8 +352,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <ChartContainer title="Unit Participation">
                   <AnalyticsCharts type="bar" data={wardData} dataKey="count" xKey="ward" />
                 </ChartContainer>
-                {dashboardType === 'Skills Acquisition' ? (
-                  <ChartContainer title="Skills Distribution">
+                {dashboardType === 'Skills Acquisition' || dashboardType === 'Institute Cluster' || dashboardType === 'Missionary Preparatory Class' ? (
+                  <ChartContainer title={
+                    dashboardType === 'Skills Acquisition' ? "Skills Distribution" : 
+                    (dashboardType === 'Institute Cluster' ? "Cluster Distribution" : "Designation Distribution")
+                  }>
                     <AnalyticsCharts type="bar" data={skillsData} dataKey="count" xKey="name" />
                   </ChartContainer>
                 ) : (
@@ -365,6 +396,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   onChange={(e) => setFilterDateEnd(e.target.value)}
                 />
               </div>
+              {dashboardType === 'Skills Acquisition' && (
+                <>
+                  <div className="h-8 w-px bg-slate-200 shrink-0" />
+                  <div className="flex flex-col min-w-[140px]">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Department</span>
+                    <select 
+                      className="text-sm font-bold outline-none text-slate-700 bg-transparent cursor-pointer"
+                      value={filterSkill}
+                      onChange={(e) => setFilterSkill(e.target.value)}
+                    >
+                      <option value="">All Departments</option>
+                      {SKILLS.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
             <button 
               onClick={downloadCSV}
@@ -377,7 +426,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             records={filteredRecords} 
             onDelete={handleDelete} 
             onEdit={handleEditRecord} 
-            showSkill={dashboardType === 'Skills Acquisition'}
+            subCategoryLabel={
+              dashboardType === 'Skills Acquisition' ? 'Skill' : 
+              (dashboardType === 'Institute Cluster' ? 'Cluster' : 
+              (dashboardType === 'Missionary Preparatory Class' ? 'Designation' : undefined))
+            }
           />
         </div>
       )}

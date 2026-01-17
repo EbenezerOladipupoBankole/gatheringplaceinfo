@@ -22,15 +22,31 @@ const SKILLS = [
   'Hairdressing'
 ];
 
-const AttendanceForm: React.FC = () => {
+const DESIGNATIONS = [
+  'Elder',
+  'Sister'
+];
+
+const CLUSTERS = [
+  'Obantoko',
+  'Odeda'
+];
+
+interface AttendanceFormProps {
+  preselectedEvent?: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class';
+}
+
+const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [ward, setWard] = useState('');
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [eventType, setEventType] = useState<'Friday Gathering' | 'Skills Acquisition'>('Friday Gathering');
+  const [eventType, setEventType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class'>(preselectedEvent || 'Friday Gathering');
+  const [designation, setDesignation] = useState('');
   const [skillCategory, setSkillCategory] = useState('');
+  const [cluster, setCluster] = useState('');
   const [availableWards, setAvailableWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<any[]>([]);
   const [pastRecords, setPastRecords] = useState<AttendanceRecord[]>([]);
@@ -46,6 +62,12 @@ const AttendanceForm: React.FC = () => {
     setRoster(attendanceService.getRoster());
     attendanceService.getRecords().then(setPastRecords);
   }, []);
+
+  useEffect(() => {
+    if (preselectedEvent) {
+      setEventType(preselectedEvent);
+    }
+  }, [preselectedEvent]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -102,6 +124,14 @@ const AttendanceForm: React.FC = () => {
       setStatus({ type: 'error', message: 'Please select a skill department.' });
       return;
     }
+    if (eventType === 'Institute Cluster' && !cluster) {
+      setStatus({ type: 'error', message: 'Please select a cluster.' });
+      return;
+    }
+    if (eventType === 'Missionary Preparatory Class' && !designation) {
+      setStatus({ type: 'error', message: 'Please select a designation.' });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -112,8 +142,9 @@ const AttendanceForm: React.FC = () => {
 
     try {
       // Race the saveRecord against the timeout
+      const subCategory = eventType === 'Skills Acquisition' ? skillCategory : (eventType === 'Institute Cluster' ? cluster : (eventType === 'Missionary Preparatory Class' ? designation : ''));
       // @ts-ignore - Updating signature to include event type and skill
-      const result = await Promise.race([attendanceService.saveRecord(name, phone, ward, eventType, skillCategory), timeoutPromise]);
+      const result = await Promise.race([attendanceService.saveRecord(name, phone, ward, eventType, subCategory), timeoutPromise]);
       if (result.success) {
         setStatus({ type: 'success', message: result.message });
         setDailyScripture(SCRIPTURES[Math.floor(Math.random() * SCRIPTURES.length)]);
@@ -133,6 +164,8 @@ const AttendanceForm: React.FC = () => {
     setPhone('');
     setWard('');
     setSkillCategory('');
+    setCluster('');
+    setDesignation('');
     setIsSubmitting(false);
   };
 
@@ -147,16 +180,18 @@ const AttendanceForm: React.FC = () => {
   // Calculate progress
   const requiredFields = [ward, name, phone];
   if (eventType === 'Skills Acquisition') requiredFields.push(skillCategory);
+  if (eventType === 'Missionary Preparatory Class') requiredFields.push(designation);
+  if (eventType === 'Institute Cluster') requiredFields.push(cluster);
   const completedSteps = requiredFields.filter(Boolean).length;
   const progressPercent = (completedSteps / requiredFields.length) * 100;
 
   if (status.type === 'success') {
     return (
       <div className="max-w-md mx-auto animate-in fade-in zoom-in-95 duration-1000">
-        <div className="bg-white rounded-[2rem] p-6 text-center shadow-2xl border border-white/60 relative overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] p-8 text-center shadow-2xl shadow-indigo-500/10 border border-white relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] rounded-full" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full" />
 
           {/* Temple Background for Success View */}
           <div
@@ -192,6 +227,18 @@ const AttendanceForm: React.FC = () => {
                   <span className="text-sm font-semibold text-slate-800">{skillCategory}</span>
                 </div>
               )}
+              {eventType === 'Missionary Preparatory Class' && designation && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Designation</span>
+                  <span className="text-sm font-semibold text-slate-800">{designation}</span>
+                </div>
+              )}
+              {eventType === 'Institute Cluster' && cluster && (
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cluster</span>
+                  <span className="text-sm font-semibold text-slate-800">{cluster}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ward</span>
                 <span className="text-sm font-semibold text-slate-800">{ward}</span>
@@ -215,7 +262,7 @@ const AttendanceForm: React.FC = () => {
 
             <button 
               onClick={handleReset}
-              className="w-full py-3 px-10 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-[0.98] text-[10px]"
+              className="w-full py-4 px-10 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-900/20 active:scale-[0.98] text-xs"
             >
               Next Person
             </button>
@@ -227,8 +274,8 @@ const AttendanceForm: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto relative px-4 w-full">
-      <div className="bg-white shadow-2xl rounded-[2rem] overflow-hidden border border-white/50 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-        <div className="p-5 relative overflow-hidden">
+      <div className="bg-white shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border border-white animate-in fade-in slide-in-from-bottom-12 duration-1000">
+        <div className="p-8 relative overflow-hidden">
           
           {/* Subtle Form Background Image */}
           <div
@@ -240,54 +287,56 @@ const AttendanceForm: React.FC = () => {
             }}
           />
 
-          <header className="text-center mb-4 relative z-10">
-            <img src={logo} alt="Gathering Place" className="w-10 h-10 mx-auto mb-2 rounded-xl shadow-lg" />
-            <h1 className="text-2xl font-serif text-slate-900 mb-0.5 tracking-tight">Welcome</h1>
-            <p className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">{todayStr}</p>
+          <header className="text-center mb-8 relative z-10">
+            <img src={logo} alt="Gathering Place" className="w-12 h-12 mx-auto mb-4 rounded-2xl shadow-lg shadow-indigo-500/20" />
+            <h1 className="text-3xl font-black text-slate-900 mb-1 tracking-tight">{eventType}</h1>
+            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">{todayStr}</p>
           </header>
 
-          <form onSubmit={handleSubmit} className="space-y-3 relative z-10">
+          <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
             {/* Progress Bar */}
-            <div className="w-full bg-slate-100 rounded-full h-2.5">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mb-6 overflow-hidden">
               <div 
-                className="bg-gradient-to-r from-amber-400 to-amber-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
 
             {/* --- STEP 1: EVENT TYPE --- */}
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Event Type</label>
-            <div className="flex p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setEventType('Friday Gathering')}
-                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  eventType === 'Friday Gathering' 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                Friday Gathering
-              </button>
-              <button
-                type="button"
-                onClick={() => setEventType('Skills Acquisition')}
-                className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                  eventType === 'Skills Acquisition' 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                Skills Acquisition
-              </button>
-            </div>
-            </div>
+            {!preselectedEvent && (
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Event Type</label>
+                <div className="flex p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEventType('Friday Gathering')}
+                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      eventType === 'Friday Gathering' 
+                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5' 
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Friday Gathering
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEventType('Skills Acquisition')}
+                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      eventType === 'Skills Acquisition' 
+                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5' 
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Skills Acquisition
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Skill Selection (Conditional) */}
             {eventType === 'Skills Acquisition' && (
-              <div className="space-y-1.5 group animate-in fade-in slide-in-from-top-2 duration-300">
-                <label htmlFor="skill" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+              <div className="space-y-2 group animate-in fade-in slide-in-from-top-2 duration-300">
+                <label htmlFor="skill" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
                   Skill Department
                 </label>
                 <div className="relative flex items-center">
@@ -299,7 +348,7 @@ const AttendanceForm: React.FC = () => {
                     required
                     value={skillCategory}
                     onChange={(e) => setSkillCategory(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-xs shadow-sm hover:border-slate-200"
+                    className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100"
                   >
                     <option value="" disabled>Select a skill...</option>
                     {SKILLS.map(s => (
@@ -310,9 +359,64 @@ const AttendanceForm: React.FC = () => {
               </div>
             )}
 
+            {/* Cluster Selection (Conditional) */}
+            {eventType === 'Institute Cluster' && (
+              <div className="space-y-2 group animate-in fade-in slide-in-from-top-2 duration-300">
+                <label htmlFor="cluster" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+                  Cluster Location
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 text-slate-400 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <select 
+                    id="cluster"
+                    required
+                    value={cluster}
+                    onChange={(e) => setCluster(e.target.value)}
+                    className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100"
+                  >
+                    <option value="" disabled>Select a cluster...</option>
+                    {CLUSTERS.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+            {/* Designation Selection (Conditional) */}
+            {eventType === 'Missionary Preparatory Class' && (
+              <div className="space-y-1.5 group animate-in fade-in slide-in-from-top-2 duration-300">
+                <label htmlFor="designation" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+                  Designation
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 text-slate-400 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <select 
+                    id="designation"
+                    required
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    className="w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-xs shadow-sm hover:border-slate-200"
+                  >
+                    <option value="" disabled>Select a designation...</option>
+                    {DESIGNATIONS.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             {/* --- STEP 2: UNIT SELECTION --- */}
-            <div className="space-y-1.5 group">
-              <label htmlFor="ward" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+            <div className="space-y-2 group">
+              <label htmlFor="ward" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
                 Ward / Branch
               </label>
               <div className="relative flex items-center">
@@ -328,7 +432,7 @@ const AttendanceForm: React.FC = () => {
                     setName('');
                     setShowSuggestions(false);
                   }}
-                  className="w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-xs shadow-sm hover:border-slate-200"
+                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100"
                 >
                   <option value="" disabled>Select your unit...</option>
                   {availableWards.map(w => (
@@ -344,8 +448,8 @@ const AttendanceForm: React.FC = () => {
             </div>
 
             {/* --- STEP 3: NAME INPUT --- */}
-            <div className="space-y-1.5 relative group" ref={suggestionRef}>
-              <label htmlFor="fullName" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+            <div className="space-y-2 relative group" ref={suggestionRef}>
+              <label htmlFor="fullName" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
                 Full Name
               </label>
               <div className="relative flex items-center">
@@ -360,7 +464,7 @@ const AttendanceForm: React.FC = () => {
                   placeholder={ward ? "Type your name..." : "Select unit first"}
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-xs shadow-sm hover:border-slate-200 ${!ward ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-sm hover:bg-slate-100 ${!ward ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={!ward}
                 />
               </div>
@@ -385,8 +489,8 @@ const AttendanceForm: React.FC = () => {
             </div>
 
             {/* --- STEP 4: PHONE NUMBER --- */}
-            <div className="space-y-1.5 group">
-              <label htmlFor="phone" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-amber-600">
+            <div className="space-y-2 group">
+              <label htmlFor="phone" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
                 Phone Number
               </label>
               <div className="relative flex items-center">
@@ -400,7 +504,7 @@ const AttendanceForm: React.FC = () => {
                   placeholder="080..."
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className={`w-full bg-white border-2 border-slate-100 rounded-xl pl-10 pr-4 py-2.5 focus:ring-0 focus:border-amber-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-xs shadow-sm hover:border-slate-200 ${!ward ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-sm hover:bg-slate-100 ${!ward ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={!ward}
                 />
               </div>
@@ -409,10 +513,10 @@ const AttendanceForm: React.FC = () => {
             <button 
               type="submit" 
               disabled={isSubmitting || !ward || !name || !phone}
-              className={`w-full py-3 rounded-xl font-black text-[10px] text-white transition-all transform shadow-xl relative group active:scale-[0.98] overflow-hidden mt-4 ${
+              className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all transform shadow-lg shadow-indigo-500/20 relative group active:scale-[0.98] overflow-hidden mt-8 ${
                 (isSubmitting || !ward || !name || !phone)
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                : 'bg-slate-900 hover:bg-black'
+                : 'bg-indigo-600 hover:bg-indigo-700'
               }`}
             >
               <div className="relative z-10 flex items-center justify-center gap-4">
@@ -449,8 +553,8 @@ const AttendanceForm: React.FC = () => {
       
       {/* Decorative dots below form */}
       <div className="text-center mt-6 opacity-60">
-        <p className="text-[10px] text-white uppercase tracking-[0.3em] font-bold">
-          {eventType === 'Friday Gathering' ? 'Young Single Adult Gathering' : 'YSA Skills Acquisition'}
+        <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em] font-bold">
+          {eventType === 'Friday Gathering' ? 'Young Single Adult Gathering' : (eventType === 'Skills Acquisition' ? 'YSA Skills Acquisition' : (eventType === 'Institute Cluster' ? 'Institute Cluster' : 'Missionary Preparation'))}
         </p>
       </div>
     </div>
