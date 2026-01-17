@@ -121,103 +121,118 @@ const App: React.FC = () => {
         }
 
         return (
-          <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10 bg-slate-50">
-            {/* Background Ambience */}
+          <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center py-24 px-4 sm:px-6 lg:px-8 relative z-10 bg-slate-50">
+            {/* Enterprise Background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl">
-                  <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-200/20 blur-[120px] mix-blend-multiply" />
-                  <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-amber-200/20 blur-[120px] mix-blend-multiply" />
-               </div>
-               <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+               <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-slate-50 opacity-80"></div>
+               <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(to right, #cbd5e1 1px, transparent 1px)', backgroundSize: '40px 40px', maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }}></div>
             </div>
 
-            {/* Header Section */}
-            <div className="text-center max-w-3xl mx-auto mb-16 space-y-6 animate-in fade-in slide-in-from-top-8 duration-1000">
-               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-indigo-100 text-indigo-700 shadow-sm relative z-20">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Abeokuta Nigeria Stake</span>
-               </div>
-               
-               <h1 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tight leading-tight relative z-20">
-                 Welcome to <br/>
-                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 drop-shadow-sm">Gathering Place</span>
-               </h1>
-               <p className="text-lg md:text-xl text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed relative z-20">
-                 Select a program below to mark your attendance.
-               </p>
-            </div>
-
-            {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl px-4">
-              {[
-                {
-                  id: 'skills',
-                  title: 'Skills Acquisition',
-                  day: 'Tuesday',
-                  sub: 'Weekly Class',
-                  img: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&auto=format&fit=crop&q=60',
-                  desc: 'Vocational training and self-reliance skills.'
-                },
-                {
-                  id: 'cluster',
-                  title: 'Institute Cluster',
-                  day: 'Thursday',
-                  sub: 'Odeda & Obantoko',
-                  img: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800&auto=format&fit=crop&q=60',
-                  desc: 'Cluster gatherings for Odeda and Obantoko.'
-                },
-                {
-                  id: 'institute',
-                  title: 'Institute of Religion',
-                  day: 'Friday',
-                  sub: 'Weekly Class',
-                  img: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=60',
-                  desc: 'Standard Institute of Religion classes.'
-                },
-                {
-                  id: 'missionary',
-                  title: 'Missionary Prep',
-                  day: 'Saturday',
-                  sub: 'Weekly Class',
-                  img: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?w=800&auto=format&fit=crop&q=60',
-                  desc: 'Preparing prospective missionaries for service.'
-                }
-              ].map((program, idx) => (
-                <button
-                  key={program.id}
-                  onClick={() => setSelectedProgram(program.id)}
-                  className={`group relative flex flex-col overflow-hidden rounded-[2.5rem] bg-white shadow-xl shadow-slate-200/60 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 hover:-translate-y-2 text-left animate-in fade-in slide-in-from-bottom-8 ring-1 ring-slate-100`}
-                  style={{ animationDelay: `${idx * 150}ms` }}
-                >
-                  <div className="h-56 w-full overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent z-10"/>
-                    <img 
-                      src={program.img} 
-                      alt={program.title}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute bottom-4 left-4 z-20">
-                      <span className="px-4 py-1.5 rounded-full bg-white/95 backdrop-blur text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-lg">
-                        {program.day}
+            <div className="w-full max-w-7xl mx-auto relative z-20">
+                {/* Header Section */}
+                <div className="text-center max-w-3xl mx-auto mb-20 space-y-8 animate-in fade-in slide-in-from-top-8 duration-1000">
+                   <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-default">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                       </span>
-                    </div>
-                  </div>
-                  <div className="p-8 flex-1 flex flex-col bg-white relative z-20">
-                    <h3 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors tracking-tight">
-                      {program.title}
-                    </h3>
-                    <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-4">
-                      {program.sub}
-                    </p>
-                    <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                      {program.desc}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Abeokuta Nigeria Stake</span>
+                   </div>
+                   
+                   <div>
+                     <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6">
+                       The Gathering Place
+                     </h1>
+                     <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+                       A dedicated space for strengthening faith, fostering unity, and developing self-reliance among Young Single Adults.
+                     </p>
+                   </div>
+                </div>
+
+                {/* Enterprise Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    {
+                      id: 'skills',
+                      title: 'Skills Acquisition',
+                      day: 'Tuesday',
+                      sub: 'Vocational Training',
+                      img: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&auto=format&fit=crop&q=60',
+                      desc: 'Hands-on workshops including Barbing, ICT, Catering, and more.',
+                      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    },
+                    {
+                      id: 'cluster',
+                      title: 'Institute Cluster',
+                      day: 'Thursday',
+                      sub: 'Odeda & Obantoko',
+                      img: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800&auto=format&fit=crop&q=60',
+                      desc: 'Localized institute gatherings for brethren and sisters in cluster areas.',
+                      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    },
+                    {
+                      id: 'institute',
+                      title: 'Institute of Religion',
+                      day: 'Friday',
+                      sub: 'General Assembly',
+                      img: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=60',
+                      desc: 'Weekly spiritual instruction and social gathering for all YSAs.',
+                      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    },
+                    {
+                      id: 'missionary',
+                      title: 'Missionary Prep',
+                      day: 'Saturday',
+                      sub: 'Prospective Missionaries',
+                      img: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?w=800&auto=format&fit=crop&q=60',
+                      desc: 'Specialized preparation class for future full-time missionaries.',
+                      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    }
+                  ].map((program, idx) => (
+                    <button
+                      key={program.id}
+                      onClick={() => setSelectedProgram(program.id)}
+                      className="group relative flex flex-col bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 hover:border-indigo-100 transition-all duration-500 overflow-hidden text-left h-full animate-in fade-in slide-in-from-bottom-8"
+                      style={{ animationDelay: `${idx * 100}ms` }}
+                    >
+                      <div className="h-48 w-full overflow-hidden relative">
+                        <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-slate-900/0 transition-colors z-10" />
+                        <img 
+                          src={program.img} 
+                          alt={program.title}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                        <div className="absolute top-4 right-4 z-20">
+                          <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-sm border border-white/20">
+                            {program.day}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-8 flex flex-col flex-1">
+                        <div className="mb-6">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 mb-6 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-300 shadow-sm">
+                            {program.icon}
+                          </div>
+                          <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight group-hover:text-indigo-600 transition-colors">
+                            {program.title}
+                          </h3>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            {program.sub}
+                          </p>
+                        </div>
+                        <p className="text-slate-500 text-sm leading-relaxed font-medium mb-8">
+                          {program.desc}
+                        </p>
+                        <div className="mt-auto flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                          Check In Now
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
             </div>
           </div>
         );

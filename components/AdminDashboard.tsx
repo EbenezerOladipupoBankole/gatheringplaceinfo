@@ -38,6 +38,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [newWardName, setNewWardName] = useState('');
   const [newRosterName, setNewRosterName] = useState('');
   const [newRosterWard, setNewRosterWard] = useState('');
+  const [rosterSearch, setRosterSearch] = useState('');
 
   useEffect(() => {
     refreshData();
@@ -79,7 +80,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     // Ensure all active wards have a group, even if empty
     wards.forEach(w => groups[w] = []);
     
-    roster.forEach(m => {
+    const filteredMembers = roster.filter(m => 
+      m.name.toLowerCase().includes(rosterSearch.toLowerCase())
+    );
+
+    filteredMembers.forEach(m => {
       if (!groups[m.ward]) groups[m.ward] = [];
       groups[m.ward].push(m);
     });
@@ -89,8 +94,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       groups[key].sort((a, b) => a.name.localeCompare(b.name));
     });
 
-    return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [roster, wards]);
+    let result = Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (rosterSearch.trim()) {
+      result = result.filter(([_, members]) => members.length > 0);
+    }
+
+    return result;
+  }, [roster, wards, rosterSearch]);
 
   const dailyData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -205,15 +216,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   return (
     <div className="space-y-8 pb-20">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-        <div>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        
+        <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Admin Console</h2>
           </div>
-          <p className="text-slate-500 font-medium">Manage activity records & YSAs rosters.</p>
+          <p className="text-slate-500 font-medium max-w-md">Manage activity records, monitor attendance trends, and oversee YSA rosters.</p>
         </div>
 
-          <div className="flex flex-col items-end gap-4">
+          <div className="flex flex-col items-end gap-4 relative z-10">
           <div className="flex items-center gap-3 px-2">
             <div className="text-right hidden md:block">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
@@ -232,14 +245,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             )}
           </div>
 
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <div className="flex bg-slate-100/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-200">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                   activeTab === tab 
-                  ? 'bg-white text-indigo-900 shadow-sm' 
+                  ? 'bg-white text-indigo-900 shadow-sm ring-1 ring-black/5' 
                   : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
@@ -261,16 +274,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           <button
             key={program.id}
             onClick={() => setDashboardType(program.id as any)}
-            className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 text-center group ${
+            className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center justify-center gap-3 text-center group relative overflow-hidden ${
               dashboardType === program.id
-                ? 'bg-indigo-900 border-indigo-900 text-white shadow-lg scale-[1.02]'
-                : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-200 hover:bg-slate-50'
+                ? 'bg-indigo-900 border-indigo-900 text-white shadow-xl scale-[1.02] ring-4 ring-indigo-100'
+                : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-lg'
             }`}
           >
-            <div className={`p-2 rounded-full transition-colors ${dashboardType === program.id ? 'bg-white/10' : 'bg-slate-100 group-hover:bg-white'}`}>
+            <div className={`p-3 rounded-2xl transition-colors ${dashboardType === program.id ? 'bg-white/10' : 'bg-slate-100 group-hover:bg-white'}`}>
                {program.icon}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">{program.label}</span>
+            <span className="text-[11px] font-black uppercase tracking-widest">{program.label}</span>
           </button>
         ))}
       </div>
@@ -286,7 +299,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   type="text" 
                   value={editingRecord.full_name}
                   onChange={(e) => setEditingRecord({...editingRecord, full_name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900"
+                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   required
                 />
               </div>
@@ -296,7 +309,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   type="tel" 
                   value={editingRecord.phone_number}
                   onChange={(e) => setEditingRecord({...editingRecord, phone_number: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900"
+                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   required
                 />
               </div>
@@ -305,7 +318,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <select 
                   value={editingRecord.ward}
                   onChange={(e) => setEditingRecord({...editingRecord, ward: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900"
+                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                   required
                 >
                   {wards.map(w => <option key={w} value={w}>{w}</option>)}
@@ -327,9 +340,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               {SKILLS.map(skill => {
                 const count = filteredRecords.filter(r => r.skillCategory === skill).length;
                 return (
-                  <div key={skill} className="bg-white p-4 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 text-center">{skill}</span>
-                    <span className="text-2xl font-black text-slate-900">{count}</span>
+                  <div key={skill} className="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center hover:shadow-lg hover:border-indigo-100 transition-all group">
+                    <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-400 uppercase tracking-widest mb-2 text-center transition-colors">{skill}</span>
+                    <span className="text-3xl font-black text-slate-900 group-hover:text-indigo-900 transition-colors">{count}</span>
                   </div>
                 );
               })}
@@ -376,12 +389,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       {activeTab === 'records' && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div className="bg-white px-6 py-4 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-6 w-full md:w-auto overflow-x-auto">
+            <div className="bg-white px-6 py-4 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-6 w-full md:w-auto overflow-x-auto scrollbar-hide">
               <div className="flex flex-col min-w-[120px]">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">From</span>
                 <input 
                   type="date" 
-                  className="text-sm font-bold outline-none text-slate-700 bg-transparent"
+                  className="text-sm font-bold outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
                   value={filterDateStart}
                   onChange={(e) => setFilterDateStart(e.target.value)}
                 />
@@ -391,7 +404,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">To</span>
                 <input 
                   type="date" 
-                  className="text-sm font-bold outline-none text-slate-700 bg-transparent"
+                  className="text-sm font-bold outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
                   value={filterDateEnd}
                   onChange={(e) => setFilterDateEnd(e.target.value)}
                 />
@@ -402,7 +415,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   <div className="flex flex-col min-w-[140px]">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Department</span>
                     <select 
-                      className="text-sm font-bold outline-none text-slate-700 bg-transparent cursor-pointer"
+                      className="text-sm font-bold outline-none text-slate-700 bg-transparent cursor-pointer focus:text-indigo-600 transition-colors"
                       value={filterSkill}
                       onChange={(e) => setFilterSkill(e.target.value)}
                     >
@@ -417,7 +430,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
             <button 
               onClick={downloadCSV}
-              className="w-full md:w-auto px-8 py-4 bg-indigo-900 text-white rounded-2xl transition-all shadow-xl flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:bg-black"
+              className="w-full md:w-auto px-8 py-4 bg-indigo-900 text-white rounded-2xl transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:bg-indigo-800 hover:scale-[1.02]"
             >
               Export Records
             </button>
@@ -441,7 +454,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             <h3 className="text-xl font-black text-slate-900 mb-6">Access Credentials</h3>
             <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Admin Password</label>
-              <code className="text-lg font-black text-indigo-900 tracking-widest">{ADMIN_PASSWORD}</code>
+              <code className="text-lg font-black text-indigo-900 tracking-widest font-mono">{ADMIN_PASSWORD}</code>
             </div>
           </div>
 
@@ -451,11 +464,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <input 
                 type="text" 
                 placeholder="New Unit name..." 
-                className="flex-1 px-4 py-2 border rounded-xl text-sm font-bold outline-indigo-600 text-slate-900"
+                className="flex-1 px-4 py-3 bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 value={newWardName}
                 onChange={(e) => setNewWardName(e.target.value)}
               />
-              <button type="submit" className="px-4 py-2 bg-indigo-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-colors">Add</button>
+              <button type="submit" className="px-6 py-3 bg-indigo-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-800 transition-colors shadow-lg shadow-indigo-900/20">Add</button>
             </form>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                {wards.map(w => (
@@ -470,7 +483,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           </div>
 
           <div className="md:col-span-2 bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm">
-            <h3 className="text-2xl font-black text-slate-900 mb-8">Roster Management</h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <h3 className="text-2xl font-black text-slate-900">Roster Management</h3>
+              <div className="relative w-full sm:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search members..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                  value={rosterSearch}
+                  onChange={(e) => setRosterSearch(e.target.value)}
+                />
+              </div>
+            </div>
             
             {/* Add Member Form */}
             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-10">
@@ -479,13 +508,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                  <input 
                    type="text" 
                    placeholder="Full Name..." 
-                   className="flex-1 px-4 py-3 border rounded-xl text-sm font-bold text-slate-900"
+                   className="flex-1 px-4 py-3 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                    required
                    value={newRosterName}
                    onChange={(e) => setNewRosterName(e.target.value)}
                  />
                  <select 
-                   className="flex-1 px-4 py-3 border rounded-xl text-sm font-bold text-slate-900"
+                   className="flex-1 px-4 py-3 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                    required
                    value={newRosterWard}
                    onChange={(e) => setNewRosterWard(e.target.value)}
@@ -493,7 +522,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                    <option value="" disabled>Select Unit...</option>
                    {wards.map(w => <option key={w} value={w}>{w}</option>)}
                  </select>
-                 <button type="submit" className="px-8 py-3 bg-indigo-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-colors">Register</button>
+                 <button type="submit" className="px-8 py-3 bg-indigo-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-800 transition-colors shadow-lg shadow-indigo-900/20">Register</button>
               </form>
             </div>
 
@@ -514,7 +543,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {members.map((m, idx) => (
-                          <div key={idx} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between group hover:shadow-sm transition-shadow">
+                          <div key={idx} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between group hover:shadow-md hover:border-indigo-100 transition-all">
                              <span className="text-sm font-bold text-slate-700">{m.name}</span>
                              <button onClick={() => handleDeleteRoster(m.name)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -553,7 +582,7 @@ const KpiCard: React.FC<{ title: string; value: string; trend: string; icon: str
   const style = colorMap[color];
 
   return (
-    <div className={`${style.bg} p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-md transition-shadow group cursor-default`}>
+    <div className={`${style.bg} p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group cursor-default`}>
       <div className="flex justify-between items-start mb-4">
         <div className={`${style.iconBg} p-3 rounded-2xl transition-transform group-hover:scale-110`}>
           {icons[icon]}
