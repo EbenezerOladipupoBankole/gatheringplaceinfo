@@ -12,14 +12,14 @@ interface AttendanceTableProps {
 
 const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, onEdit, showSkill, subCategoryLabel }) => {
   return (
-    <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mt-8">
-      <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+      <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <div>
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">Records Ledger</h3>
-          <p className="text-sm text-slate-400 font-medium">Detailed history of all check-ins</p>
+          <h3 className="text-base font-bold text-slate-900">Records Ledger</h3>
+          <p className="text-xs text-slate-500">Detailed history of all check-ins</p>
         </div>
-        <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
+        <div className="bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-sm">
+          <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide">
             {records.length} Submissions
           </span>
         </div>
@@ -27,13 +27,13 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-slate-100">
-              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Name</th>
-              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Phone</th>
-              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ward</th>
-              {(showSkill || subCategoryLabel) && <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{subCategoryLabel || 'Skill'}</th>}
-              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date</th>
-              <th className="px-4 sm:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
+            <tr className="border-b border-slate-200 bg-slate-50/50">
+              <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</th>
+              <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ward</th>
+              {(showSkill || subCategoryLabel) && <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{subCategoryLabel || 'Skill'}</th>}
+              <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -41,42 +41,42 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
               <tr>
                 <td colSpan={(showSkill || subCategoryLabel) ? 6 : 5} className="px-8 py-20 text-center">
                   <div className="flex flex-col items-center">
-                    <p className="text-slate-300 font-black uppercase tracking-widest text-xs">No records found</p>
+                    <p className="text-slate-400 font-semibold uppercase tracking-wide text-xs">No records found</p>
                   </div>
                 </td>
               </tr>
             ) : (
-              [...records].reverse().map((record) => (
-                <tr key={record.id} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-4 sm:px-8 py-4">
-                    <span className="font-bold text-slate-700 tracking-tight">{record.full_name}</span>
+              records.map((record, idx) => (
+                <tr key={record.id} className={`hover:bg-slate-50 transition-colors group ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                  <td className="px-6 py-3">
+                    <span className="font-medium text-slate-900 text-sm">{record.full_name}</span>
                   </td>
-                  <td className="px-4 sm:px-8 py-4">
-                    <span className="text-slate-500 text-sm font-semibold tabular-nums">
+                  <td className="px-6 py-3">
+                    <span className="text-slate-500 text-sm font-medium tabular-nums">
                       {record.phone_number || "---"}
                     </span>
                   </td>
-                  <td className="px-4 sm:px-8 py-4">
-                    <span className="bg-white text-blue-600 border border-blue-100 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-tighter shadow-sm">
+                  <td className="px-6 py-3">
+                    <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide">
                       {record.ward}
                     </span>
                   </td>
                   {(showSkill || subCategoryLabel) && (
-                    <td className="px-4 sm:px-8 py-4">
-                      <span className="text-slate-700 text-sm font-bold">
+                    <td className="px-6 py-3">
+                      <span className="text-slate-700 text-sm font-medium">
                         {record.skillCategory || '---'}
                       </span>
                     </td>
                   )}
-                  <td className="px-4 sm:px-8 py-4">
-                    <span className="text-slate-500 text-sm font-medium">
+                  <td className="px-6 py-3">
+                    <span className="text-slate-500 text-sm">
                       {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   </td>
-                  <td className="px-4 sm:px-8 py-4 text-right flex justify-end gap-2">
+                  <td className="px-6 py-3 text-right flex justify-end gap-2">
                     <button 
                       onClick={() => onEdit(record)}
-                      className="text-slate-300 hover:text-indigo-600 p-2 rounded-xl hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"
+                      className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"
                       title="Edit Entry"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -85,7 +85,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({ records, onDelete, on
                     </button>
                     <button 
                       onClick={() => onDelete(record.id)}
-                      className="text-slate-300 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                      className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                       title="Remove Entry"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

@@ -30,8 +30,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [wards, setWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
   
-  const [filterDateStart, setFilterDateStart] = useState('');
-  const [filterDateEnd, setFilterDateEnd] = useState('');
+  const [filterDateStart, setFilterDateStart] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' }));
+  const [filterDateEnd, setFilterDateEnd] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' }));
   const [filterSkill, setFilterSkill] = useState('');
 
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
@@ -52,7 +52,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   };
 
   const filteredRecords = useMemo(() => {
-    return records.filter(r => {
+    const filtered = records.filter(r => {
       const isAfter = filterDateStart ? r.date >= filterDateStart : true;
       const isBefore = filterDateEnd ? r.date <= filterDateEnd : true;
       // Default to 'Friday Gathering' if eventType is missing (backward compatibility)
@@ -64,6 +64,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
       return isAfter && isBefore && typeMatch && skillMatch;
     });
+
+    return filtered.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
   }, [records, filterDateStart, filterDateEnd, dashboardType, filterSkill]);
 
   const wardData = useMemo<WardStats[]>(() => {
@@ -135,6 +137,70 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
+  }, [filteredRecords]);
+
+  const topAttendees = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredRecords.forEach(r => {
+      counts[r.full_name] = (counts[r.full_name] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+  }, [filteredRecords]);
+
+  const punctualAttendees = useMemo(() => {
+    const times: Record<string, number[]> = {};
+    filteredRecords.forEach(r => {
+      const date = new Date(r.timestamp);
+      // Minutes from midnight
+      const minutes = date.getHours() * 60 + date.getMinutes();
+      if (!times[r.full_name]) times[r.full_name] = [];
+      times[r.full_name].push(minutes);
+    });
+
+    return Object.entries(times)
+      .map(([name, minutesArr]) => {
+        const avg = minutesArr.reduce((a, b) => a + b, 0) / minutesArr.length;
+        return { name, avg };
+      })
+      .sort((a, b) => a.avg - b.avg)
+      .slice(0, 5)
+      .map(p => {
+        const h = Math.floor(p.avg / 60);
+        const m = Math.floor(p.avg % 60);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return { 
+          name: p.name, 
+          time: `${h12}:${m.toString().padStart(2, '0')} ${ampm}` 
+        };
+      });
+  }, [filteredRecords]);
+
+  const quarterlyChampions = useMemo(() => {
+    const quarters: Record<string, Record<string, number>> = {};
+    filteredRecords.forEach(r => {
+      const month = parseInt(r.date.split('-')[1]);
+      let q = 'Q4';
+      if (month <= 3) q = 'Q1';
+      else if (month <= 6) q = 'Q2';
+      else if (month <= 9) q = 'Q3';
+      
+      if (!quarters[q]) quarters[q] = {};
+      quarters[q][r.full_name] = (quarters[q][r.full_name] || 0) + 1;
+    });
+
+    return Object.entries(quarters).map(([quarter, counts]) => {
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const best = sorted[0];
+      return {
+        quarter,
+        name: best ? best[0] : 'N/A',
+        count: best ? best[1] : 0
+      };
+    }).sort((a, b) => a.quarter.localeCompare(b.quarter));
   }, [filteredRecords]);
 
   const handleDelete = async (id: string) => {
@@ -215,56 +281,70 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const tabs: AdminTab[] = ['analytics', 'records', 'settings'];
 
   return (
-    <div className="space-y-8 pb-20">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/50 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-             <h2 className="text-3xl font-black text-slate-900 tracking-tight">Admin Console</h2>
-          </div>
-          <p className="text-slate-500 font-medium max-w-md">Manage activity records, monitor attendance trends, and oversee YSA rosters.</p>
+    <div className="space-y-8 pb-20 font-sans relative">
+      {/* Ambient Background */}
+      <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-indigo-100/40 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-[50vw] h-[50vw] bg-blue-50/60 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />
+      </div>
+
+      {/* Enterprise Header */}
+      <header className="relative bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 group isolate ring-1 ring-white/10">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=2000&q=80" 
+            alt="Header Background" 
+            className="w-full h-full object-cover opacity-20 mix-blend-overlay group-hover:scale-105 transition-transform duration-1000"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900/40" />
         </div>
 
-          <div className="flex flex-col items-end gap-4 relative z-10">
-          <div className="flex items-center gap-3 px-2">
-            <div className="text-right hidden md:block">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
-              <p className="text-sm font-bold text-slate-700">{user?.displayName || user?.email?.split('@')[0] || 'Admin'}</p>
-            </div>
+        <div className="relative z-10">
+          <h2 className="text-3xl font-black text-white tracking-tight mb-2">Admin Console</h2>
+          <p className="text-slate-300 text-sm font-medium max-w-md leading-relaxed">
+            Overview of attendance, metrics, and system configurations.
+          </p>
+        </div>
+
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-4">
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-white">
             {user?.photoURL ? (
               <img 
                 src={user.photoURL} 
                 alt="Profile" 
-                className="w-10 h-10 rounded-full border-2 border-white shadow-md ring-2 ring-slate-100"
+                className="w-8 h-8 rounded-full border-2 border-white/20"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-md ring-2 ring-slate-100">
+              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-inner">
                 {user?.email?.[0]?.toUpperCase() || 'A'}
               </div>
             )}
+            <div className="text-sm font-bold pr-2">
+              {user?.displayName || user?.email?.split('@')[0] || 'Administrator'}
+            </div>
           </div>
 
-          <div className="flex bg-slate-100/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-200">
+          <div className="flex bg-white/10 backdrop-blur-md p-1 rounded-xl border border-white/10">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
                   activeTab === tab 
-                  ? 'bg-white text-indigo-900 shadow-sm ring-1 ring-black/5' 
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-slate-900 shadow-lg' 
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {tab === 'settings' ? 'Setup' : tab}
               </button>
             ))}
           </div>
-          </div>
+        </div>
       </header>
 
       {/* Program Selector */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-1">
         {[
           { id: 'Friday Gathering', label: 'Institute of Religion', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
           { id: 'Skills Acquisition', label: 'Skills Acquisition', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
@@ -274,59 +354,59 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           <button
             key={program.id}
             onClick={() => setDashboardType(program.id as any)}
-            className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center justify-center gap-3 text-center group relative overflow-hidden ${
+            className={`px-4 py-4 rounded-2xl border transition-all flex items-center gap-3 text-left group relative overflow-hidden ${
               dashboardType === program.id
-                ? 'bg-indigo-900 border-indigo-900 text-white shadow-xl scale-[1.02] ring-4 ring-indigo-100'
-                : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-200 hover:bg-slate-50 hover:shadow-lg'
+                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-500/20 scale-[1.02]'
+                : 'bg-white/80 backdrop-blur-sm border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-0.5'
             }`}
           >
-            <div className={`p-3 rounded-2xl transition-colors ${dashboardType === program.id ? 'bg-white/10' : 'bg-slate-100 group-hover:bg-white'}`}>
+            <div className={`p-2.5 rounded-xl transition-colors ${dashboardType === program.id ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-indigo-50 text-indigo-600'}`}>
                {program.icon}
             </div>
-            <span className="text-[11px] font-black uppercase tracking-widest">{program.label}</span>
+            <span className="text-xs font-bold uppercase tracking-wide">{program.label}</span>
           </button>
         ))}
       </div>
 
       {editingRecord && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-300">
-            <h3 className="text-2xl font-black text-slate-900 mb-6 tracking-tight">Edit Record</h3>
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-300 border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Edit Record</h3>
             <form onSubmit={saveEditedRecord} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Full Name</label>
                 <input 
                   type="text" 
                   value={editingRecord.full_name}
                   onChange={(e) => setEditingRecord({...editingRecord, full_name: e.target.value})}
-                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone Number</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Phone Number</label>
                 <input 
                   type="tel" 
                   value={editingRecord.phone_number}
                   onChange={(e) => setEditingRecord({...editingRecord, phone_number: e.target.value})}
-                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
                 <select 
                   value={editingRecord.ward}
                   onChange={(e) => setEditingRecord({...editingRecord, ward: e.target.value})}
-                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl px-4 py-3 font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   required
                 >
                   {wards.map(w => <option key={w} value={w}>{w}</option>)}
                 </select>
               </div>
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
-                <button type="submit" className="flex-1 py-3 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 transition-colors">Save</button>
+                <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 py-2.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-sm">Cancel</button>
+                <button type="submit" className="flex-1 py-2.5 bg-indigo-600 rounded-lg font-semibold text-white hover:bg-indigo-700 transition-colors text-sm shadow-sm">Save Changes</button>
               </div>
             </form>
           </div>
@@ -340,9 +420,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               {SKILLS.map(skill => {
                 const count = filteredRecords.filter(r => r.skillCategory === skill).length;
                 return (
-                  <div key={skill} className="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center hover:shadow-lg hover:border-indigo-100 transition-all group">
-                    <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-400 uppercase tracking-widest mb-2 text-center transition-colors">{skill}</span>
-                    <span className="text-3xl font-black text-slate-900 group-hover:text-indigo-900 transition-colors">{count}</span>
+                  <div key={skill} className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center hover:border-indigo-300 hover:shadow-md transition-all group">
+                    <span className="text-xs font-semibold text-slate-500 group-hover:text-indigo-600 uppercase tracking-wide mb-1 text-center transition-colors">{skill}</span>
+                    <span className="text-2xl font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">{count}</span>
                   </div>
                 );
               })}
@@ -350,10 +430,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard title="Total Check-ins" value={filteredRecords.length.toString()} trend="History" icon="users" color="blue" />
-            <KpiCard title="Engaged Units" value={wardData.length.toString()} trend="Active" icon="home" color="emerald" />
-            <KpiCard title="Daily Peak" value={(dailyData.reduce((max, d) => Math.max(max, d.count), 0)).toString()} trend="Record" icon="chart" color="indigo" />
-            <KpiCard title="Avg per Week" value={Math.round(filteredRecords.length / 4).toString()} trend="Average" icon="calendar" color="slate" />
+            <KpiCard 
+              title="Total Check-ins" 
+              value={filteredRecords.length.toString()} 
+              trend="History" 
+              icon="users" 
+              color="blue" 
+              bgImage="https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=400&q=80"
+            />
+            <KpiCard 
+              title="Engaged Units" 
+              value={wardData.length.toString()} 
+              trend="Active" 
+              icon="home" 
+              color="emerald" 
+              bgImage="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=400&q=80"
+            />
+            <KpiCard 
+              title="Daily Peak" 
+              value={(dailyData.reduce((max, d) => Math.max(max, d.count), 0)).toString()} 
+              trend="Record" 
+              icon="chart" 
+              color="indigo" 
+              bgImage="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80"
+            />
+            <KpiCard 
+              title="Avg per Week" 
+              value={Math.round(filteredRecords.length / 4).toString()} 
+              trend="Average" 
+              icon="calendar" 
+              color="slate" 
+              bgImage="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=400&q=80"
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -379,6 +487,77 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 )}
               </div>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <ChartContainer title="Top Attendees">
+                <AnalyticsCharts type="bar" data={topAttendees} dataKey="count" xKey="name" />
+              </ChartContainer>
+
+              <div className="space-y-6">
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                  <div className="absolute -top-6 -right-6 w-32 h-32 opacity-10 pointer-events-none rotate-12">
+                     <img src="https://cdn-icons-png.flaticon.com/512/864/864837.png" alt="Trophy" className="w-full h-full object-contain" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-4 relative z-10">Quarterly Champions</h3>
+                  <div className="space-y-3">
+                    {quarterlyChampions.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic">No data available</p>
+                    ) : (
+                      quarterlyChampions.map((q) => (
+                        <div key={q.quarter} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shadow-inner ${
+                                q.quarter === 'Q1' ? 'bg-blue-100 text-blue-600' : 
+                                q.quarter === 'Q2' ? 'bg-emerald-100 text-emerald-600' :
+                                q.quarter === 'Q3' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
+                              }`}>
+                                {q.quarter}
+                              </div>
+                              <div>
+                                <span className="font-bold text-slate-800 text-sm block">{q.name}</span>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top Attendee</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-black text-slate-900 block leading-none">{q.count}</span>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase">Visits</span>
+                            </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Most Punctual (Avg)</h3>
+                  <div className="space-y-3">
+                    {punctualAttendees.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic">No data available</p>
+                    ) : (
+                      punctualAttendees.map((p, i) => {
+                        const rankColor = i === 0 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 
+                                          i === 1 ? 'bg-slate-100 text-slate-700 border-slate-200' : 
+                                          i === 2 ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-slate-50 text-slate-500 border-slate-100';
+                        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                        
+                        return (
+                        <div key={p.name} className={`flex items-center justify-between p-3 rounded-xl border ${i < 3 ? 'border-transparent shadow-sm' : 'border-slate-100'} ${i === 0 ? 'bg-gradient-to-r from-yellow-50 to-white' : 'bg-white'}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${rankColor} border`}>
+                                {medal}
+                              </div>
+                              <span className={`font-bold text-sm truncate max-w-[120px] ${i === 0 ? 'text-slate-900' : 'text-slate-700'}`}>{p.name}</span>
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 tabular-nums">{p.time}</span>
+                        </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="lg:col-span-1">
                <GeminiInsights records={filteredRecords} />
             </div>
@@ -389,22 +568,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       {activeTab === 'records' && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div className="bg-white px-6 py-4 rounded-[2rem] border border-slate-200 shadow-sm flex items-center gap-6 w-full md:w-auto overflow-x-auto scrollbar-hide">
+            <div className="bg-white/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 w-full md:w-auto overflow-x-auto">
               <div className="flex flex-col min-w-[120px]">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">From</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">From</span>
                 <input 
                   type="date" 
-                  className="text-sm font-bold outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
+                  className="text-sm font-medium outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
                   value={filterDateStart}
                   onChange={(e) => setFilterDateStart(e.target.value)}
                 />
               </div>
               <div className="h-8 w-px bg-slate-200 shrink-0" />
               <div className="flex flex-col min-w-[120px]">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">To</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">To</span>
                 <input 
                   type="date" 
-                  className="text-sm font-bold outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
+                  className="text-sm font-medium outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
                   value={filterDateEnd}
                   onChange={(e) => setFilterDateEnd(e.target.value)}
                 />
@@ -413,9 +592,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <>
                   <div className="h-8 w-px bg-slate-200 shrink-0" />
                   <div className="flex flex-col min-w-[140px]">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Department</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Department</span>
                     <select 
-                      className="text-sm font-bold outline-none text-slate-700 bg-transparent cursor-pointer focus:text-indigo-600 transition-colors"
+                      className="text-sm font-medium outline-none text-slate-700 bg-transparent cursor-pointer focus:text-indigo-600 transition-colors"
                       value={filterSkill}
                       onChange={(e) => setFilterSkill(e.target.value)}
                     >
@@ -427,10 +606,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   </div>
                 </>
               )}
+              {(filterDateStart || filterDateEnd) && (
+                <button 
+                  onClick={() => { setFilterDateStart(''); setFilterDateEnd(''); }}
+                  className="ml-4 text-[10px] font-bold text-slate-400 hover:text-red-600 uppercase tracking-wide transition-colors whitespace-nowrap"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
             <button 
               onClick={downloadCSV}
-              className="w-full md:w-auto px-8 py-4 bg-indigo-900 text-white rounded-2xl transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:bg-indigo-800 hover:scale-[1.02]"
+              className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 font-semibold text-xs uppercase tracking-wide hover:bg-indigo-700 hover:scale-105"
             >
               Export Records
             </button>
@@ -450,30 +637,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
       {activeTab === 'settings' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm">
-            <h3 className="text-xl font-black text-slate-900 mb-6">Access Credentials</h3>
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Admin Password</label>
-              <code className="text-lg font-black text-indigo-900 tracking-widest font-mono">{ADMIN_PASSWORD}</code>
+          <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Access Credentials</h3>
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 block">Admin Password</label>
+              <code className="text-base font-bold text-indigo-700 font-mono">{ADMIN_PASSWORD}</code>
             </div>
           </div>
 
-          <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
-            <h3 className="text-xl font-black text-slate-900 mb-6">Manage Units</h3>
+          <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Manage Units</h3>
             <form onSubmit={handleAddWard} className="flex gap-2 mb-4">
               <input 
                 type="text" 
                 placeholder="New Unit name..." 
-                className="flex-1 px-4 py-3 bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                 value={newWardName}
                 onChange={(e) => setNewWardName(e.target.value)}
               />
-              <button type="submit" className="px-6 py-3 bg-indigo-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-800 transition-colors shadow-lg shadow-indigo-900/20">Add</button>
+              <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-indigo-700 transition-colors shadow-sm">Add</button>
             </form>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                {wards.map(w => (
-                 <div key={w} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                    <span className="font-bold text-slate-700">{w}</span>
+                 <div key={w} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group">
+                    <span className="font-medium text-slate-700 text-sm">{w}</span>
                     <button onClick={() => handleDeleteWard(w)} className="text-slate-300 hover:text-red-500 p-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                     </button>
@@ -482,9 +669,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="md:col-span-2 bg-white p-6 md:p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+          <div className="md:col-span-2 bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-              <h3 className="text-2xl font-black text-slate-900">Roster Management</h3>
+              <h3 className="text-lg font-bold text-slate-900">Roster Management</h3>
               <div className="relative w-full sm:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -494,7 +681,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 <input
                   type="text"
                   placeholder="Search members..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
                   value={rosterSearch}
                   onChange={(e) => setRosterSearch(e.target.value)}
                 />
@@ -502,19 +689,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
             
             {/* Add Member Form */}
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-10">
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-4">Add New Member</p>
+            <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 mb-8">
+              <p className="text-xs font-bold text-indigo-600 uppercase tracking-wide mb-3">Add New Member</p>
               <form onSubmit={handleAddRoster} className="flex flex-col sm:flex-row gap-4">
                  <input 
                    type="text" 
                    placeholder="Full Name..." 
-                   className="flex-1 px-4 py-3 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                   className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                    required
                    value={newRosterName}
                    onChange={(e) => setNewRosterName(e.target.value)}
                  />
                  <select 
-                   className="flex-1 px-4 py-3 bg-white border-0 ring-1 ring-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                   className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                    required
                    value={newRosterWard}
                    onChange={(e) => setNewRosterWard(e.target.value)}
@@ -522,7 +709,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                    <option value="" disabled>Select Unit...</option>
                    {wards.map(w => <option key={w} value={w}>{w}</option>)}
                  </select>
-                 <button type="submit" className="px-8 py-3 bg-indigo-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-800 transition-colors shadow-lg shadow-indigo-900/20">Register</button>
+                 <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-indigo-700 transition-colors shadow-sm">Register</button>
               </form>
             </div>
 
@@ -531,8 +718,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                {groupedRoster.map(([wardName, members]) => (
                  <div key={wardName} className="space-y-4">
                     <div className="flex items-center gap-4">
-                       <h4 className="text-lg font-black text-slate-800 tracking-tight">{wardName}</h4>
-                       <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                       <h4 className="text-base font-bold text-slate-800">{wardName}</h4>
+                       <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-100">
                          {members.length} Members
                        </span>
                        <div className="flex-1 h-px bg-slate-100" />
@@ -543,8 +730,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {members.map((m, idx) => (
-                          <div key={idx} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between group hover:shadow-md hover:border-indigo-100 transition-all">
-                             <span className="text-sm font-bold text-slate-700">{m.name}</span>
+                          <div key={idx} className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between group hover:border-indigo-300 transition-all">
+                             <span className="text-sm font-medium text-slate-700">{m.name}</span>
                              <button onClick={() => handleDeleteRoster(m.name)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -564,7 +751,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   );
 };
 
-const KpiCard: React.FC<{ title: string; value: string; trend: string; icon: string; color: string }> = ({ title, value, trend, icon, color }) => {
+const KpiCard: React.FC<{ title: string; value: string; trend: string; icon: string; color: string; bgImage?: string }> = ({ title, value, trend, icon, color, bgImage }) => {
   const colorMap: Record<string, { bg: string, text: string, iconBg: string }> = {
     blue: { bg: 'bg-white', text: 'text-blue-600', iconBg: 'bg-blue-50 text-blue-600' },
     emerald: { bg: 'bg-white', text: 'text-emerald-600', iconBg: 'bg-emerald-50 text-emerald-600' },
@@ -582,23 +769,28 @@ const KpiCard: React.FC<{ title: string; value: string; trend: string; icon: str
   const style = colorMap[color];
 
   return (
-    <div className={`${style.bg} p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 group cursor-default`}>
-      <div className="flex justify-between items-start mb-4">
-        <div className={`${style.iconBg} p-3 rounded-2xl transition-transform group-hover:scale-110`}>
+    <div className={`${style.bg} relative p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-default overflow-hidden`}>
+      {bgImage && (
+        <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
+          <img src={bgImage} alt="" className="w-full h-full object-cover grayscale" />
+        </div>
+      )}
+      <div className="relative z-10 flex justify-between items-start mb-3">
+        <div className={`${style.iconBg} p-2 rounded-lg`}>
           {icons[icon]}
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">{trend}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 bg-slate-50 px-2 py-1 rounded">{trend}</span>
       </div>
-      <h4 className="text-xs font-bold uppercase tracking-[0.15em] mb-1 text-slate-400">{title}</h4>
-      <p className="text-3xl font-black text-slate-900">{value}</p>
+      <h4 className="relative z-10 text-xs font-semibold uppercase tracking-wide mb-1 text-slate-500">{title}</h4>
+      <p className="relative z-10 text-2xl font-bold text-slate-900">{value}</p>
     </div>
   );
 };
 
 const ChartContainer: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col min-h-[260px] md:min-h-[420px]">
-    <div className="mb-8">
-      <h3 className="text-xl font-black text-slate-900 tracking-tight">{title}</h3>
+  <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[300px] hover:shadow-md transition-shadow">
+    <div className="mb-6 border-b border-slate-100 pb-4">
+      <h3 className="text-lg font-bold text-slate-900">{title}</h3>
     </div>
     <div className="flex-1 w-full min-h-0">
       {children}
