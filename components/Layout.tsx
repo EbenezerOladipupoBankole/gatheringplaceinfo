@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { ViewMode } from '../types';
 import churchLogo from '../churchlogo.png';
+import WelcomePasscode from './WelcomePasscode';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) => {
   const isAdminView = currentView === ViewMode.ADMIN_DASHBOARD;
   const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isUserAuthorized, setIsUserAuthorized] = useState(false);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -35,6 +37,10 @@ const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate }) =>
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden bg-slate-50">
+      {currentView === ViewMode.USER_FORM && !isUserAuthorized && (
+        <WelcomePasscode onSuccess={() => setIsUserAuthorized(true)} />
+      )}
+
       {/* Navigation */}
       <nav className="sticky top-0 z-50 transition-all duration-500 border-b bg-white/80 border-slate-200 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
