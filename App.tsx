@@ -44,7 +44,9 @@ const SPIRITUAL_QUOTES = [
 const ALLOWED_ADMINS = [
   "bankoleebenezer111@gmail.com",      // <--- Put your exact Google email here
   "samidowu2001@gmail.com",    // <--- Put the 2nd admin's email here
-  "ife.victor1830@gmail.com"      // <--- Put the 3rd admin's email here
+  "ife.victor1830@gmail.com",      // <--- Put the 3rd admin's email here
+  "oluemmy29@gmail.com",
+  "moshoodoyeniran09@gmail.com"
 ];
 
 const App: React.FC = () => {
