@@ -46,7 +46,9 @@ const ALLOWED_ADMINS = [
   "samidowu2001@gmail.com",    // <--- Put the 2nd admin's email here
   "ife.victor1830@gmail.com",      // <--- Put the 3rd admin's email here
   "oluemmy29@gmail.com",
-  "moshoodoyeniran09@gmail.com"
+  "moshoodoyeniran09@gmail.com",
+  "boluwatifev66@gmail.com",
+  "jineepinee@gmail.com"
 ];
 
 const App: React.FC = () => {
@@ -167,7 +169,7 @@ const App: React.FC = () => {
                       id: 'cluster',
                       title: 'Institute Cluster',
                       day: 'Thursday',
-                      sub: 'Odeda & Obantoko',
+                      sub: 'Odeda, Obantoko & Kuto',
                       img: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=800&auto=format&fit=crop&q=60',
                       desc: 'Localized institute gatherings for brethren and sisters in cluster areas.',
                       icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>

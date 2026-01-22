@@ -29,7 +29,8 @@ const DESIGNATIONS = [
 
 const CLUSTERS = [
   'Obantoko',
-  'Odeda'
+  'Odeda',
+  'Kuto'
 ];
 
 interface AttendanceFormProps {
