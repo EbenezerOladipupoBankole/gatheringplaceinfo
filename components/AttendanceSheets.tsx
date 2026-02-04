@@ -7,6 +7,18 @@ interface AttendanceSheetsProps {
   eventType: string;
 }
 
+const normalizeWard = (ward: string) => {
+  const mapping: Record<string, string> = {
+    'Abiola Way': 'Abiola Way Ward',
+    'Apena': 'Apena Branch',
+    'Alabata': 'Alabata Branch',
+    'Kugba': 'Kugba Branch',
+    'Obantoko': 'Obantoko Ward',
+    'Odeda': 'Odeda Ward'
+  };
+  return mapping[ward] || ward;
+};
+
 const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eventType }) => {
   const [viewMode, setViewMode] = useState<'matrix' | 'transport'>('matrix');
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -24,34 +36,9 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
       return rType === eventType &&
         rDate.getFullYear() === year &&
         rDate.getMonth() + 1 === month;
-    });
+    }).map(r => ({ ...r, ward: normalizeWard(r.ward) }));
 
-    const recordDates = Array.from(new Set(monthlyRecords.map(r => r.date))).sort();
-
-    const expectedDates = new Set<string>();
-    const daysInMonth = new Date(year, month, 0).getDate();
-
-    const targetDays = new Set<number>();
-    if (eventType === 'Skills Acquisition') {
-      targetDays.add(2); // Tuesday
-    } else if (eventType === 'Institute Cluster') {
-      targetDays.add(4); // Thursday
-    } else if (eventType === 'Missionary Preparatory Class') {
-      targetDays.add(6); // Saturday
-    } else {
-      targetDays.add(5); // Friday (Friday Gathering)
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateObj = new Date(year, month - 1, d);
-      const dayOfWeek = dateObj.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-      if (targetDays.has(dayOfWeek)) {
-        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        expectedDates.add(dateStr);
-      }
-    }
-
-    const dates = Array.from(new Set([...recordDates, ...expectedDates])).sort();
+    const dates = Array.from(new Set(monthlyRecords.map(r => r.date))).sort();
 
     const rows = wards.map(ward => {
       const wardRecords = monthlyRecords.filter(r => r.ward === ward);
@@ -81,31 +68,88 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
   const transportReport = useMemo(() => {
     const [year, month] = selectedMonth.split('-').map(Number);
 
-    // 1. Get all records for the month, for the three main event types
+    // 1. Get all records for the month, across ALL event types
     const monthlyRecords = records.filter(r => {
       const rDate = new Date(r.date);
-      const rType = r.eventType || 'Friday Gathering';
-      const relevantTypes = ['Friday Gathering', 'Skills Acquisition', 'Institute Cluster', 'Missionary Preparatory Class'];
-      return relevantTypes.includes(rType) &&
-        rDate.getFullYear() === year &&
+      return rDate.getFullYear() === year &&
         rDate.getMonth() + 1 === month;
-    });
+    }).map(r => ({ ...r, ward: normalizeWard(r.ward) }));
 
-    // 2. Get all possible dates (Tuesdays, Thursdays, Fridays) for the month
-    const allDates = new Set<string>();
-    const daysInMonth = new Date(year, month, 0).getDate();
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateObj = new Date(year, month - 1, d);
-      const dayOfWeek = dateObj.getDay(); // 2=Tue, 4=Thu, 5=Fri, 6=Sat
-      if ([2, 4, 5, 6].includes(dayOfWeek)) {
-        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        allDates.add(dateStr);
-      }
-    }
-    const dates = Array.from(allDates).sort();
+    const dates = Array.from(new Set(monthlyRecords.map(r => r.date))).sort();
 
     // 3. Structure the data for rendering
-    const data: Record<string, { name: string; dates: Set<string>; groups: Record<string, number>; ward: string }[]> = {};
+    // Helper: Calculate Levenshtein distance for fuzzy matching
+    const getLevenshteinDistance = (a: string, b: string): number => {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+      const matrix = Array.from(Array(b.length + 1), () => Array(a.length + 1).fill(0));
+      for (let i = 0; i <= b.length; i++) { matrix[i][0] = i; }
+      for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          const cost = b.charAt(i - 1) === a.charAt(j - 1) ? 0 : 1;
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return matrix[b.length][a.length];
+    };
+
+    // Helper: Check if two names are likely the same person (handles typos, substrings, reordering)
+    const areNamesSimilar = (n1: string, n2: string) => {
+      const clean = (n: string) => n.toLowerCase().trim().replace(/[^a-z\s]/g, '').split(/\s+/).filter(p => p.length > 1);
+      const parts1 = clean(n1);
+      const parts2 = clean(n2);
+      
+      if (parts1.length === 0 || parts2.length === 0) return false;
+
+      // Identify shorter and longer arrays (by number of tokens)
+      const [shorter, longer] = parts1.length <= parts2.length ? [parts1, parts2] : [parts2, parts1];
+      
+      let matches = 0;
+      const usedIndices = new Set<number>();
+
+      for (const sPart of shorter) {
+        for (let i = 0; i < longer.length; i++) {
+          if (usedIndices.has(i)) continue;
+          
+          const lPart = longer[i];
+          
+          // 1. Exact match
+          if (sPart === lPart) {
+            matches++;
+            usedIndices.add(i);
+            break;
+          }
+          
+          // 2. Levenshtein (Typos)
+          const dist = getLevenshteinDistance(sPart, lPart);
+          // Allow 1 edit for length >= 3, 2 edits for length >= 6
+          const allowed = sPart.length >= 6 ? 2 : (sPart.length >= 3 ? 1 : 0);
+          if (dist <= allowed) {
+             matches++;
+             usedIndices.add(i);
+             break;
+          }
+
+          // 3. Substring (e.g. Jide in Olajide)
+          if ((lPart.includes(sPart) && lPart.length > sPart.length) || 
+              (sPart.includes(lPart) && sPart.length > lPart.length)) {
+             matches++;
+             usedIndices.add(i);
+             break;
+          }
+        }
+      }
+
+      // Require matching all parts of the shorter name representation
+      return matches >= shorter.length; 
+    };
+
+    const data: Record<string, { name: string; visitCount: number; groups: Record<string, number>; ward: string }[]> = {};
 
     monthlyRecords.forEach(r => {
       // Determine Grouping Key
@@ -113,20 +157,32 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
 
       if (!data[key]) data[key] = [];
 
-      // Normalize for comparison (case-insensitive, trim whitespace)
-      const normalizedInputName = r.full_name.trim().toLowerCase();
-      let person = data[key].find(p => p.name.trim().toLowerCase() === normalizedInputName);
+      // Use the new similarity check
+      let person = data[key].find(p => areNamesSimilar(p.name, r.full_name));
 
       if (!person) {
-        person = { name: r.full_name.trim(), dates: new Set(), groups: {}, ward: r.ward };
+        // Convert to Title Case (e.g. "John Doe")
+        const titleCaseName = r.full_name.trim().toLowerCase().split(/\s+/)
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        person = { name: titleCaseName, visitCount: 0, groups: {}, ward: r.ward };
         data[key].push(person);
+      } else {
+        // If the new name is more complete, update the stored name to the title-cased version of the new one.
+        if (r.full_name.length > person.name.length) {
+          person.name = r.full_name.trim().toLowerCase().split(/\s+/)
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
       }
-      person.dates.add(r.date);
+      person.visitCount += 1;
 
       // Track Class/Group
       let group = r.eventType || 'Friday Gathering';
       if (group === 'Skills Acquisition' && r.skillCategory) {
         group = r.skillCategory;
+      } else if (group === 'Institute Cluster') {
+        group = 'Institute Cluster';
+      } else if (group === 'Missionary Preparatory Class') {
+        group = 'Mission Prep';
       } else if (group === 'Friday Gathering') {
         group = 'Institute';
       }
@@ -135,7 +191,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
 
     // Filter by minVisits and sort by name
     Object.keys(data).forEach(key => {
-      data[key] = data[key].filter(p => p.dates.size >= minVisits)
+      data[key] = data[key].filter(p => p.visitCount >= minVisits)
         .sort((a, b) => a.name.localeCompare(b.name));
 
       // Remove empty keys
@@ -145,14 +201,23 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     });
 
     // Determine keys to iterate over
-    let reportKeys: string[] = [];
-    // Use wards prop to maintain order, but include any data found
-    reportKeys = wards.filter(w => data[w]);
-    const extraKeys = Object.keys(data).filter(k => !wards.includes(k));
-    reportKeys = [...reportKeys, ...extraKeys];
+    let reportKeys = Object.keys(data);
+    const interestedPersonKey = 'Interested Person';
+    const hasInterestedPerson = reportKeys.includes(interestedPersonKey);
+
+    // Filter out 'Interested Person' for sorting
+    reportKeys = reportKeys.filter(key => key !== interestedPersonKey);
+
+    // Sort alphabetically
+    reportKeys.sort((a, b) => a.localeCompare(b));
+
+    // Add 'Interested Person' back at the end if it exists
+    if (hasInterestedPerson) {
+        reportKeys.push(interestedPersonKey);
+    }
 
     return { dates, data, reportKeys };
-  }, [records, selectedMonth, minVisits, wards, eventType]);
+  }, [records, selectedMonth, minVisits, wards]);
 
   const downloadCSV = () => {
     if (uniqueDates.length === 0) return;
@@ -355,19 +420,12 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
             {transportReport.reportKeys.map((groupKey, index) => {
               const persons = transportReport.data[groupKey]!;
               
-              const eventTitle = {
-                'Skills Acquisition': 'Tuesday Skill Classes',
-                'Institute Cluster': 'Thursday Cluster Institute',
-                'Friday Gathering': 'Friday Gathering/Institute',
-                'Missionary Preparatory Class': 'Saturday Mission Prep Class'
-              }[eventType] || eventType;
-
               return (
                 <div key={groupKey} className="mb-8 p-8 page-break bg-white">
                   {/* Header */}
                   <div className="text-center mb-4">
                     <h1 className="text-2xl font-black text-black uppercase tracking-tight">Africa West Area Gathering Place Daily Attendance Register</h1>
-                    <h2 className="text-xl font-bold text-indigo-900 uppercase mt-2">{eventTitle}</h2>
+                    <h2 className="text-xl font-bold text-indigo-900 uppercase mt-2">Consolidated Monthly Report</h2>
                   </div>
 
                   {/* Meta Info Box */}
@@ -401,15 +459,15 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                     </thead>
                     <tbody>
                       {persons.map((person, idx) => {
-                        // Determine main group
-                        const mainGroup = Object.entries(person.groups).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+                        // List all groups attended, separated by comma
+                        const allGroups = Object.keys(person.groups).sort().join(', ');
 
                         return (<tr key={person.name} className="h-8">
                           <td className="border border-amber-800 p-1 text-center font-bold text-black">{idx + 1}</td>
                           <td className="border border-amber-800 p-1 px-2 font-bold text-black">{person.name}</td>
                           <td className="border border-amber-800 p-1 px-2 text-black">{person.ward}</td>
-                          <td className="border border-amber-800 p-1 px-2 text-black">{mainGroup}</td>
-                          <td className="border border-amber-800 p-1 text-center font-bold text-black">{person.dates.size}</td>
+                          <td className="border border-amber-800 p-1 px-2 text-black">{allGroups}</td>
+                          <td className="border border-amber-800 p-1 text-center font-bold text-black">{person.visitCount}</td>
                         </tr>
                         );
                       })}
@@ -424,6 +482,12 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr className="font-bold text-black bg-amber-50">
+                        <td colSpan={4} className="border border-amber-800 p-1 px-2 text-right">TOTAL VISITS</td>
+                        <td className="border border-amber-800 p-1 text-center">{persons.reduce((sum, p) => sum + p.visitCount, 0)}</td>
+                      </tr>
+                    </tfoot>
                   </table>
 
                   {/* Footer */}
