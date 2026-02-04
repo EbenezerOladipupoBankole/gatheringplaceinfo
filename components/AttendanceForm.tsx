@@ -48,6 +48,10 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
   const [designation, setDesignation] = useState('');
   const [skillCategory, setSkillCategory] = useState('');
   const [cluster, setCluster] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return now.toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' });
+  });
   const [availableWards, setAvailableWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<any[]>([]);
   const [pastRecords, setPastRecords] = useState<AttendanceRecord[]>([]);
@@ -134,6 +138,19 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
       return;
     }
 
+    // Check for duplicates before submitting
+    const isDuplicate = pastRecords.some(
+      record =>
+        record.date === selectedDate &&
+        (record.eventType || 'Friday Gathering') === eventType &&
+        record.full_name.trim().toLowerCase() === name.trim().toLowerCase()
+    );
+
+    if (isDuplicate) {
+      setStatus({ type: 'error', message: `${name} has already signed in for this event on this date.` });
+      return;
+    }
+
     setIsSubmitting(true);
     
     // Create a timeout promise to prevent infinite loading
@@ -145,10 +162,22 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
       // Race the saveRecord against the timeout
       const subCategory = eventType === 'Skills Acquisition' ? skillCategory : (eventType === 'Institute Cluster' ? cluster : (eventType === 'Missionary Preparatory Class' ? designation : ''));
       // @ts-ignore - Updating signature to include event type and skill
-      const result = await Promise.race([attendanceService.saveRecord(name, phone, ward, eventType, subCategory), timeoutPromise]);
+      const result = await Promise.race([attendanceService.saveRecord(name, phone, ward, eventType, subCategory, selectedDate), timeoutPromise]);
       if (result.success) {
         setStatus({ type: 'success', message: result.message });
         setDailyScripture(SCRIPTURES[Math.floor(Math.random() * SCRIPTURES.length)]);
+        // Add the new record to pastRecords to prevent immediate duplicates without a full refetch
+        const newRecord: AttendanceRecord = {
+          id: new Date().toISOString(), // A temporary ID is sufficient
+          full_name: name.trim(),
+          phone_number: phone,
+          ward: ward,
+          date: selectedDate,
+          timestamp: new Date().getTime(),
+          eventType: eventType,
+          skillCategory: subCategory,
+        };
+        setPastRecords(prev => [...prev, newRecord]);
       } else {
         setStatus({ type: 'error', message: result.message });
         setIsSubmitting(false);
@@ -170,12 +199,12 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
     setIsSubmitting(false);
   };
 
-  const todayStr = new Date().toLocaleDateString('en-US', { 
+  const displayDate = new Date(selectedDate).toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric',
-    timeZone: 'Africa/Lagos'
+    timeZone: 'UTC'
   });
 
   // Calculate progress
@@ -245,8 +274,8 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 <span className="text-sm font-semibold text-slate-800">{ward}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Time</span>
-                <span className="text-sm font-semibold text-slate-800">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Lagos' })}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</span>
+                <span className="text-sm font-semibold text-slate-800">{selectedDate}</span>
               </div>
             </div>
 
@@ -291,7 +320,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
           <header className="text-center mb-8 relative z-10">
             <img src={logo} alt="Gathering Place" className="w-12 h-12 mx-auto mb-4 rounded-2xl shadow-lg shadow-indigo-500/20" />
             <h1 className="text-3xl font-black text-slate-900 mb-1 tracking-tight">{eventType}</h1>
-            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">{todayStr}</p>
+            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">{displayDate}</p>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
@@ -414,6 +443,28 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 </div>
               </div>
             )}
+
+            {/* --- DATE SELECTION --- */}
+            <div className="space-y-2 group">
+              <label htmlFor="date" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+                Date
+              </label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-slate-400 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input 
+                  id="date"
+                  type="date" 
+                  required
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-800 text-sm shadow-sm hover:bg-slate-100"
+                />
+              </div>
+            </div>
 
             {/* --- STEP 2: UNIT SELECTION --- */}
             <div className="space-y-2 group">

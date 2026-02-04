@@ -48,7 +48,8 @@ const ALLOWED_ADMINS = [
   "oluemmy29@gmail.com",
   "moshoodoyeniran09@gmail.com",
   "boluwatifev66@gmail.com",
-  "jineepinee@gmail.com"
+  "jineepinee@gmail.com",
+  "adebakiadekunle@gmail.com"
 ];
 
 const App: React.FC = () => {

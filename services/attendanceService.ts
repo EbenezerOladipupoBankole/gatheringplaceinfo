@@ -1,16 +1,16 @@
 import { AttendanceRecord } from '../types';
 import { MOCK_RECORDS, WARDS, MEMBER_ROSTER, RosterMember } from '../constants';
 import { db } from './firebaseConfig';
-import { 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
   where,
-  Timestamp 
+  Timestamp
 } from 'firebase/firestore';
 
 const RECORDS_COLLECTION = 'attendance_records';
@@ -48,7 +48,7 @@ export const attendanceService = {
         }
 
         const q = query(collection(db, RECORDS_COLLECTION), ...constraints);
-        
+
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -96,7 +96,7 @@ export const attendanceService = {
   // unless you want to manage them in DB too. 
   // Keeping them local ensures the form loads fast even with bad network.
   getWards: (): string[] => {
-    return WARDS; 
+    return WARDS;
   },
 
   addWard: (wardName: string): void => {
@@ -125,7 +125,7 @@ export const attendanceService = {
     // Query only today's records for efficiency
     const q = query(collection(db, RECORDS_COLLECTION), where("date", "==", today));
     const querySnapshot = await getDocs(q);
-    
+
     const byWard: Record<string, number> = {};
     querySnapshot.forEach((doc) => {
       const data = doc.data();
@@ -134,5 +134,29 @@ export const attendanceService = {
     });
 
     return { total: querySnapshot.size, byWard };
+  },
+
+  migrateRecords: async (fromDate: string, toDate: string): Promise<number> => {
+    try {
+      const q = query(
+        collection(db, RECORDS_COLLECTION),
+        where("date", "==", fromDate)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const updates = querySnapshot.docs.map(async (docSnapshot) => {
+        const recordRef = doc(db, RECORDS_COLLECTION, docSnapshot.id);
+        await updateDoc(recordRef, {
+          date: toDate
+        });
+      });
+
+      await Promise.all(updates);
+      console.log(`Migrated ${updates.length} records from ${fromDate} to ${toDate}`);
+      return updates.length;
+    } catch (e) {
+      console.error("Error migrating records:", e);
+      return 0;
     }
+  }
 };

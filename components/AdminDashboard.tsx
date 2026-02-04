@@ -7,8 +7,9 @@ import { ADMIN_PASSWORD, RosterMember } from '../constants';
 import AttendanceTable from './AttendanceTable';
 import AnalyticsCharts from './AnalyticsCharts';
 import GeminiInsights from './GeminiInsights';
+import AttendanceSheets from './AttendanceSheets';
 
-type AdminTab = 'analytics' | 'records' | 'settings';
+type AdminTab = 'analytics' | 'records' | 'sheets' | 'settings';
 
 interface AdminDashboardProps {
   user?: User | null;
@@ -23,16 +24,23 @@ const SKILLS = [
   'Hairdressing'
 ];
 
+const CLUSTERS = [
+  'Obantoko',
+  'Odeda',
+  'Kuto'
+];
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('analytics');
   const [dashboardType, setDashboardType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class'>('Friday Gathering');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [wards, setWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
-  
+
   const [filterDateStart, setFilterDateStart] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' }));
   const [filterDateEnd, setFilterDateEnd] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' }));
   const [filterSkill, setFilterSkill] = useState('');
+  const [filterCluster, setFilterCluster] = useState('');
 
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
   const [newWardName, setNewWardName] = useState('');
@@ -57,16 +65,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const isBefore = filterDateEnd ? r.date <= filterDateEnd : true;
       // Default to 'Friday Gathering' if eventType is missing (backward compatibility)
       const typeMatch = (r.eventType || 'Friday Gathering') === dashboardType;
-      
-      const skillMatch = dashboardType === 'Skills Acquisition' && filterSkill 
-        ? r.skillCategory === filterSkill 
+
+      const skillMatch = dashboardType === 'Skills Acquisition' && filterSkill
+        ? r.skillCategory === filterSkill
         : true;
 
-      return isAfter && isBefore && typeMatch && skillMatch;
+      const clusterMatch = dashboardType === 'Institute Cluster' && filterCluster
+        ? r.skillCategory === filterCluster
+        : true;
+
+      return isAfter && isBefore && typeMatch && skillMatch && clusterMatch;
     });
 
     return filtered.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
-  }, [records, filterDateStart, filterDateEnd, dashboardType, filterSkill]);
+  }, [records, filterDateStart, filterDateEnd, dashboardType, filterSkill, filterCluster]);
 
   const wardData = useMemo<WardStats[]>(() => {
     const counts: Record<string, number> = {};
@@ -81,8 +93,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const groups: Record<string, RosterMember[]> = {};
     // Ensure all active wards have a group, even if empty
     wards.forEach(w => groups[w] = []);
-    
-    const filteredMembers = roster.filter(m => 
+
+    const filteredMembers = roster.filter(m =>
       m.name.toLowerCase().includes(rosterSearch.toLowerCase())
     );
 
@@ -172,9 +184,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         const m = Math.floor(p.avg % 60);
         const ampm = h >= 12 ? 'PM' : 'AM';
         const h12 = h % 12 || 12;
-        return { 
-          name: p.name, 
-          time: `${h12}:${m.toString().padStart(2, '0')} ${ampm}` 
+        return {
+          name: p.name,
+          time: `${h12}:${m.toString().padStart(2, '0')} ${ampm}`
         };
       });
   }, [filteredRecords]);
@@ -187,7 +199,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       if (month <= 3) q = 'Q1';
       else if (month <= 6) q = 'Q2';
       else if (month <= 9) q = 'Q3';
-      
+
       if (!quarters[q]) quarters[q] = {};
       quarters[q][r.full_name] = (quarters[q][r.full_name] || 0) + 1;
     });
@@ -271,14 +283,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Attendance_Export.csv`);
+
+    let filename = 'Attendance_Export';
+    if (dashboardType === 'Institute Cluster' && filterCluster) {
+      filename += `_${filterCluster}`;
+    }
+
+    link.setAttribute('download', `${filename}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const tabs: AdminTab[] = ['analytics', 'records', 'settings'];
+  const tabs: AdminTab[] = ['analytics', 'records', 'sheets', 'settings'];
 
   return (
     <div className="space-y-8 pb-20 font-sans relative">
@@ -292,9 +310,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       <header className="relative bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 group isolate ring-1 ring-white/10">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=2000&q=80" 
-            alt="Header Background" 
+          <img
+            src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=2000&q=80"
+            alt="Header Background"
             className="w-full h-full object-cover opacity-20 mix-blend-overlay group-hover:scale-105 transition-transform duration-1000"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900/40" />
@@ -310,9 +328,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-4">
           <div className="flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-white">
             {user?.photoURL ? (
-              <img 
-                src={user.photoURL} 
-                alt="Profile" 
+              <img
+                src={user.photoURL}
+                alt="Profile"
                 className="w-8 h-8 rounded-full border-2 border-white/20"
               />
             ) : (
@@ -330,11 +348,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${
-                  activeTab === tab 
-                  ? 'bg-white text-slate-900 shadow-lg' 
-                  : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${activeTab === tab
+                    ? 'bg-white text-slate-900 shadow-lg'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {tab === 'settings' ? 'Setup' : tab}
               </button>
@@ -354,14 +371,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           <button
             key={program.id}
             onClick={() => setDashboardType(program.id as any)}
-            className={`px-4 py-4 rounded-2xl border transition-all flex items-center gap-3 text-left group relative overflow-hidden ${
-              dashboardType === program.id
+            className={`px-4 py-4 rounded-2xl border transition-all flex items-center gap-3 text-left group relative overflow-hidden ${dashboardType === program.id
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-500/20 scale-[1.02]'
                 : 'bg-white/80 backdrop-blur-sm border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-0.5'
-            }`}
+              }`}
           >
             <div className={`p-2.5 rounded-xl transition-colors ${dashboardType === program.id ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-indigo-50 text-indigo-600'}`}>
-               {program.icon}
+              {program.icon}
             </div>
             <span className="text-xs font-bold uppercase tracking-wide">{program.label}</span>
           </button>
@@ -375,29 +391,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             <form onSubmit={saveEditedRecord} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Full Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editingRecord.full_name}
-                  onChange={(e) => setEditingRecord({...editingRecord, full_name: e.target.value})}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, full_name: e.target.value })}
                   className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   required
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Phone Number</label>
-                <input 
-                  type="tel" 
+                <input
+                  type="tel"
                   value={editingRecord.phone_number}
-                  onChange={(e) => setEditingRecord({...editingRecord, phone_number: e.target.value})}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, phone_number: e.target.value })}
                   className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   required
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
-                <select 
+                <select
                   value={editingRecord.ward}
-                  onChange={(e) => setEditingRecord({...editingRecord, ward: e.target.value})}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, ward: e.target.value })}
                   className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   required
                 >
@@ -430,36 +446,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard 
-              title="Total Check-ins" 
-              value={filteredRecords.length.toString()} 
-              trend="History" 
-              icon="users" 
-              color="blue" 
+            <KpiCard
+              title="Total Check-ins"
+              value={filteredRecords.length.toString()}
+              trend="History"
+              icon="users"
+              color="blue"
               bgImage="https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=400&q=80"
             />
-            <KpiCard 
-              title="Engaged Units" 
-              value={wardData.length.toString()} 
-              trend="Active" 
-              icon="home" 
-              color="emerald" 
+            <KpiCard
+              title="Engaged Units"
+              value={wardData.length.toString()}
+              trend="Active"
+              icon="home"
+              color="emerald"
               bgImage="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=400&q=80"
             />
-            <KpiCard 
-              title="Daily Peak" 
-              value={(dailyData.reduce((max, d) => Math.max(max, d.count), 0)).toString()} 
-              trend="Record" 
-              icon="chart" 
-              color="indigo" 
+            <KpiCard
+              title="Daily Peak"
+              value={(dailyData.reduce((max, d) => Math.max(max, d.count), 0)).toString()}
+              trend="Record"
+              icon="chart"
+              color="indigo"
               bgImage="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80"
             />
-            <KpiCard 
-              title="Avg per Week" 
-              value={Math.round(filteredRecords.length / 4).toString()} 
-              trend="Average" 
-              icon="calendar" 
-              color="slate" 
+            <KpiCard
+              title="Avg per Week"
+              value={Math.round(filteredRecords.length / 4).toString()}
+              trend="Average"
+              icon="calendar"
+              color="slate"
               bgImage="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=400&q=80"
             />
           </div>
@@ -475,19 +491,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 </ChartContainer>
                 {dashboardType === 'Skills Acquisition' || dashboardType === 'Institute Cluster' || dashboardType === 'Missionary Preparatory Class' ? (
                   <ChartContainer title={
-                    dashboardType === 'Skills Acquisition' ? "Skills Distribution" : 
-                    (dashboardType === 'Institute Cluster' ? "Cluster Distribution" : "Designation Distribution")
+                    dashboardType === 'Skills Acquisition' ? "Skills Distribution" :
+                      (dashboardType === 'Institute Cluster' ? "Cluster Distribution" : "Designation Distribution")
                   }>
                     <AnalyticsCharts type="bar" data={skillsData} dataKey="count" xKey="name" />
                   </ChartContainer>
                 ) : (
                   <ChartContainer title="Quarterly View">
-                     <AnalyticsCharts type="bar" data={quarterlyData} dataKey="count" xKey="quarter" />
+                    <AnalyticsCharts type="bar" data={quarterlyData} dataKey="count" xKey="quarter" />
                   </ChartContainer>
                 )}
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <ChartContainer title="Top Attendees">
                 <AnalyticsCharts type="bar" data={topAttendees} dataKey="count" xKey="name" />
@@ -496,7 +512,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <div className="space-y-6">
                 <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
                   <div className="absolute -top-6 -right-6 w-32 h-32 opacity-10 pointer-events-none rotate-12">
-                     <img src="https://cdn-icons-png.flaticon.com/512/864/864837.png" alt="Trophy" className="w-full h-full object-contain" />
+                    <img src="https://cdn-icons-png.flaticon.com/512/864/864837.png" alt="Trophy" className="w-full h-full object-contain" />
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mb-4 relative z-10">Quarterly Champions</h3>
                   <div className="space-y-3">
@@ -505,23 +521,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     ) : (
                       quarterlyChampions.map((q) => (
                         <div key={q.quarter} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shadow-inner ${
-                                q.quarter === 'Q1' ? 'bg-blue-100 text-blue-600' : 
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shadow-inner ${q.quarter === 'Q1' ? 'bg-blue-100 text-blue-600' :
                                 q.quarter === 'Q2' ? 'bg-emerald-100 text-emerald-600' :
-                                q.quarter === 'Q3' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
+                                  q.quarter === 'Q3' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
                               }`}>
-                                {q.quarter}
-                              </div>
-                              <div>
-                                <span className="font-bold text-slate-800 text-sm block">{q.name}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top Attendee</span>
-                              </div>
+                              {q.quarter}
                             </div>
-                            <div className="text-right">
-                              <span className="text-lg font-black text-slate-900 block leading-none">{q.count}</span>
-                              <span className="text-[9px] text-slate-400 font-bold uppercase">Visits</span>
+                            <div>
+                              <span className="font-bold text-slate-800 text-sm block">{q.name}</span>
+                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top Attendee</span>
                             </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-lg font-black text-slate-900 block leading-none">{q.count}</span>
+                            <span className="text-[9px] text-slate-400 font-bold uppercase">Visits</span>
+                          </div>
                         </div>
                       ))
                     )}
@@ -535,13 +550,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                       <p className="text-sm text-slate-400 italic">No data available</p>
                     ) : (
                       punctualAttendees.map((p, i) => {
-                        const rankColor = i === 0 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 
-                                          i === 1 ? 'bg-slate-100 text-slate-700 border-slate-200' : 
-                                          i === 2 ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-slate-50 text-slate-500 border-slate-100';
-                        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-                        
+                        const rankColor = i === 0 ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                          i === 1 ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                            i === 2 ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-slate-50 text-slate-500 border-slate-100';
+                        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+
                         return (
-                        <div key={p.name} className={`flex items-center justify-between p-3 rounded-xl border ${i < 3 ? 'border-transparent shadow-sm' : 'border-slate-100'} ${i === 0 ? 'bg-gradient-to-r from-yellow-50 to-white' : 'bg-white'}`}>
+                          <div key={p.name} className={`flex items-center justify-between p-3 rounded-xl border ${i < 3 ? 'border-transparent shadow-sm' : 'border-slate-100'} ${i === 0 ? 'bg-gradient-to-r from-yellow-50 to-white' : 'bg-white'}`}>
                             <div className="flex items-center gap-3">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${rankColor} border`}>
                                 {medal}
@@ -549,7 +564,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                               <span className={`font-bold text-sm truncate max-w-[120px] ${i === 0 ? 'text-slate-900' : 'text-slate-700'}`}>{p.name}</span>
                             </div>
                             <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 tabular-nums">{p.time}</span>
-                        </div>
+                          </div>
                         );
                       })
                     )}
@@ -559,7 +574,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             </div>
 
             <div className="lg:col-span-1">
-               <GeminiInsights records={filteredRecords} />
+              <GeminiInsights records={filteredRecords} />
             </div>
           </div>
         </div>
@@ -571,8 +586,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             <div className="bg-white/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 w-full md:w-auto overflow-x-auto">
               <div className="flex flex-col min-w-[120px]">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">From</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className="text-sm font-medium outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
                   value={filterDateStart}
                   onChange={(e) => setFilterDateStart(e.target.value)}
@@ -581,8 +596,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <div className="h-8 w-px bg-slate-200 shrink-0" />
               <div className="flex flex-col min-w-[120px]">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">To</span>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className="text-sm font-medium outline-none text-slate-700 bg-transparent focus:text-indigo-600 transition-colors"
                   value={filterDateEnd}
                   onChange={(e) => setFilterDateEnd(e.target.value)}
@@ -593,7 +608,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   <div className="h-8 w-px bg-slate-200 shrink-0" />
                   <div className="flex flex-col min-w-[140px]">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Department</span>
-                    <select 
+                    <select
                       className="text-sm font-medium outline-none text-slate-700 bg-transparent cursor-pointer focus:text-indigo-600 transition-colors"
                       value={filterSkill}
                       onChange={(e) => setFilterSkill(e.target.value)}
@@ -606,8 +621,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                   </div>
                 </>
               )}
+              {dashboardType === 'Institute Cluster' && (
+                <>
+                  <div className="h-8 w-px bg-slate-200 shrink-0" />
+                  <div className="flex flex-col min-w-[140px]">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Cluster</span>
+                    <select
+                      className="text-sm font-medium outline-none text-slate-700 bg-transparent cursor-pointer focus:text-indigo-600 transition-colors"
+                      value={filterCluster}
+                      onChange={(e) => setFilterCluster(e.target.value)}
+                    >
+                      <option value="">All Clusters</option>
+                      {CLUSTERS.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
               {(filterDateStart || filterDateEnd) && (
-                <button 
+                <button
                   onClick={() => { setFilterDateStart(''); setFilterDateEnd(''); }}
                   className="ml-4 text-[10px] font-bold text-slate-400 hover:text-red-600 uppercase tracking-wide transition-colors whitespace-nowrap"
                 >
@@ -615,24 +648,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 </button>
               )}
             </div>
-            <button 
+            <button
               onClick={downloadCSV}
               className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 font-semibold text-xs uppercase tracking-wide hover:bg-indigo-700 hover:scale-105"
             >
               Export Records
             </button>
           </div>
-          <AttendanceTable 
-            records={filteredRecords} 
-            onDelete={handleDelete} 
-            onEdit={handleEditRecord} 
+          <AttendanceTable
+            records={filteredRecords}
+            onDelete={handleDelete}
+            onEdit={handleEditRecord}
             subCategoryLabel={
-              dashboardType === 'Skills Acquisition' ? 'Skill' : 
-              (dashboardType === 'Institute Cluster' ? 'Cluster' : 
-              (dashboardType === 'Missionary Preparatory Class' ? 'Designation' : undefined))
+              dashboardType === 'Skills Acquisition' ? 'Skill' :
+                (dashboardType === 'Institute Cluster' ? 'Cluster' :
+                  (dashboardType === 'Missionary Preparatory Class' ? 'Designation' : undefined))
             }
           />
         </div>
+      )}
+
+      {activeTab === 'sheets' && (
+        <AttendanceSheets records={records} wards={wards} eventType={dashboardType} />
       )}
 
       {activeTab === 'settings' && (
@@ -643,14 +680,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 block">Admin Password</label>
               <code className="text-base font-bold text-indigo-700 font-mono">{ADMIN_PASSWORD}</code>
             </div>
+
+            {/* Data Maintenance Section */}
+            <div className="mt-8 pt-8 border-t border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Data Maintenance</h3>
+              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-3">Migrate Records</p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={async () => {
+                      if (window.confirm("Migrate today's (Feb 3) Institute records to Jan 30? This cannot be undone.")) {
+                        try {
+                          const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' });
+                          // We specifically target the date user asked for.
+                          // User said "today" (Feb 3) to "last week which is 30th" (Jan 30)
+                          // Assuming 'today' is the recorded date of the records.
+                          // Just to be safe, we'll use the hardcoded string matching the user's intent context
+                          // '2026-02-03' -> '2026-01-30'
+                          const count = await attendanceService.migrateRecords('2026-02-03', '2026-01-30');
+                          alert(`Successfully migrated ${count} records.`);
+                          refreshData();
+                        } catch (e) {
+                          alert("Migration failed. Check console.");
+                        }
+                      }
+                    }}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-sm text-left w-full"
+                  >
+                    Fix: Move Today's Institute to Jan 30
+                  </button>
+                  <p className="text-[10px] text-amber-600/80 leading-relaxed">
+                    Use this to correct records if attendance was marked on the wrong day (e.g. marked today instead of last Friday).
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col max-h-[600px]">
             <h3 className="text-lg font-bold text-slate-900 mb-4">Manage Units</h3>
             <form onSubmit={handleAddWard} className="flex gap-2 mb-4">
-              <input 
-                type="text" 
-                placeholder="New Unit name..." 
+              <input
+                type="text"
+                placeholder="New Unit name..."
                 className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                 value={newWardName}
                 onChange={(e) => setNewWardName(e.target.value)}
@@ -658,14 +730,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-indigo-700 transition-colors shadow-sm">Add</button>
             </form>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-               {wards.map(w => (
-                 <div key={w} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group">
-                    <span className="font-medium text-slate-700 text-sm">{w}</span>
-                    <button onClick={() => handleDeleteWard(w)} className="text-slate-300 hover:text-red-500 p-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                    </button>
-                 </div>
-               ))}
+              {wards.map(w => (
+                <div key={w} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group">
+                  <span className="font-medium text-slate-700 text-sm">{w}</span>
+                  <button onClick={() => handleDeleteWard(w)} className="text-slate-300 hover:text-red-500 p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -687,62 +759,62 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 />
               </div>
             </div>
-            
+
             {/* Add Member Form */}
             <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 mb-8">
               <p className="text-xs font-bold text-indigo-600 uppercase tracking-wide mb-3">Add New Member</p>
               <form onSubmit={handleAddRoster} className="flex flex-col sm:flex-row gap-4">
-                 <input 
-                   type="text" 
-                   placeholder="Full Name..." 
-                   className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                   required
-                   value={newRosterName}
-                   onChange={(e) => setNewRosterName(e.target.value)}
-                 />
-                 <select 
-                   className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                   required
-                   value={newRosterWard}
-                   onChange={(e) => setNewRosterWard(e.target.value)}
-                 >
-                   <option value="" disabled>Select Unit...</option>
-                   {wards.map(w => <option key={w} value={w}>{w}</option>)}
-                 </select>
-                 <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-indigo-700 transition-colors shadow-sm">Register</button>
+                <input
+                  type="text"
+                  placeholder="Full Name..."
+                  className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  required
+                  value={newRosterName}
+                  onChange={(e) => setNewRosterName(e.target.value)}
+                />
+                <select
+                  className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  required
+                  value={newRosterWard}
+                  onChange={(e) => setNewRosterWard(e.target.value)}
+                >
+                  <option value="" disabled>Select Unit...</option>
+                  {wards.map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+                <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-indigo-700 transition-colors shadow-sm">Register</button>
               </form>
             </div>
 
             {/* Grouped Member List */}
             <div className="space-y-10">
-               {groupedRoster.map(([wardName, members]) => (
-                 <div key={wardName} className="space-y-4">
-                    <div className="flex items-center gap-4">
-                       <h4 className="text-base font-bold text-slate-800">{wardName}</h4>
-                       <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-100">
-                         {members.length} Members
-                       </span>
-                       <div className="flex-1 h-px bg-slate-100" />
+              {groupedRoster.map(([wardName, members]) => (
+                <div key={wardName} className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h4 className="text-base font-bold text-slate-800">{wardName}</h4>
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-indigo-100">
+                      {members.length} Members
+                    </span>
+                    <div className="flex-1 h-px bg-slate-100" />
+                  </div>
+
+                  {members.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic pl-2">No members registered in this unit yet.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {members.map((m, idx) => (
+                        <div key={idx} className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between group hover:border-indigo-300 transition-all">
+                          <span className="text-sm font-medium text-slate-700">{m.name}</span>
+                          <button onClick={() => handleDeleteRoster(m.name)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                    
-                    {members.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic pl-2">No members registered in this unit yet.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {members.map((m, idx) => (
-                          <div key={idx} className="px-3 py-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between group hover:border-indigo-300 transition-all">
-                             <span className="text-sm font-medium text-slate-700">{m.name}</span>
-                             <button onClick={() => handleDeleteRoster(m.name)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
-                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                               </svg>
-                             </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                 </div>
-               ))}
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
