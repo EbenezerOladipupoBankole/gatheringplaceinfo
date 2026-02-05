@@ -37,8 +37,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [wards, setWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
 
-  const [filterDateStart, setFilterDateStart] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' }));
-  const [filterDateEnd, setFilterDateEnd] = useState(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' }));
+  const [filterDateStart, setFilterDateStart] = useState(() => {
+    // Get local date in YYYY-MM-DD format reliably
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  });
+  const [filterDateEnd, setFilterDateEnd] = useState(() => {
+    // Get local date in YYYY-MM-DD format reliably
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  });
   const [filterSkill, setFilterSkill] = useState('');
   const [filterCluster, setFilterCluster] = useState('');
 
@@ -349,8 +361,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${activeTab === tab
-                    ? 'bg-white text-slate-900 shadow-lg'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  ? 'bg-white text-slate-900 shadow-lg'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
                   }`}
               >
                 {tab === 'settings' ? 'Setup' : tab}
@@ -372,8 +384,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             key={program.id}
             onClick={() => setDashboardType(program.id as any)}
             className={`px-4 py-4 rounded-2xl border transition-all flex items-center gap-3 text-left group relative overflow-hidden ${dashboardType === program.id
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-500/20 scale-[1.02]'
-                : 'bg-white/80 backdrop-blur-sm border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-0.5'
+              ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-500/20 scale-[1.02]'
+              : 'bg-white/80 backdrop-blur-sm border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-white hover:shadow-lg hover:-translate-y-0.5'
               }`}
           >
             <div className={`p-2.5 rounded-xl transition-colors ${dashboardType === program.id ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-indigo-50 text-indigo-600'}`}>
@@ -523,8 +535,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         <div key={q.quarter} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs shadow-inner ${q.quarter === 'Q1' ? 'bg-blue-100 text-blue-600' :
-                                q.quarter === 'Q2' ? 'bg-emerald-100 text-emerald-600' :
-                                  q.quarter === 'Q3' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
+                              q.quarter === 'Q2' ? 'bg-emerald-100 text-emerald-600' :
+                                q.quarter === 'Q3' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
                               }`}>
                               {q.quarter}
                             </div>

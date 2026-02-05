@@ -43,20 +43,23 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
   const [ward, setWard] = useState('');
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [eventType, setEventType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class'>(preselectedEvent || 'Friday Gathering');
   const [designation, setDesignation] = useState('');
   const [skillCategory, setSkillCategory] = useState('');
   const [cluster, setCluster] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => {
+    // Get local date in YYYY-MM-DD format reliably
     const now = new Date();
-    return now.toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' });
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
   });
   const [availableWards, setAvailableWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<any[]>([]);
   const [pastRecords, setPastRecords] = useState<AttendanceRecord[]>([]);
   const [dailyScripture, setDailyScripture] = useState<{ text: string; source: string } | null>(null);
-  
+
   // Autocomplete states
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -89,8 +92,8 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
     setName(val);
     if (val.length >= 1) {
       const records = pastRecords;
-      
-      const rosterFiltered = ward 
+
+      const rosterFiltered = ward
         ? roster.filter(m => m.ward === ward).map(m => m.name)
         : roster.map(m => m.name);
 
@@ -99,12 +102,12 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
         : records.map(r => r.full_name);
 
       const allNames = Array.from(new Set([...rosterFiltered, ...recordFiltered]));
-      
+
       const filtered = allNames
         .filter(n => n.toLowerCase().includes(val.toLowerCase()))
         .sort((a, b) => a.localeCompare(b))
-        .slice(0, 5); 
-      
+        .slice(0, 5);
+
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
     } else {
@@ -152,9 +155,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
     }
 
     setIsSubmitting(true);
-    
+
     // Create a timeout promise to prevent infinite loading
-    const timeoutPromise = new Promise<{ success: boolean; message: string }>((_, reject) => 
+    const timeoutPromise = new Promise<{ success: boolean; message: string }>((_, reject) =>
       setTimeout(() => reject(new Error('Request timed out')), 10000)
     );
 
@@ -199,10 +202,10 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
     setIsSubmitting(false);
   };
 
-  const displayDate = new Date(selectedDate).toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
+  const displayDate = new Date(selectedDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     timeZone: 'UTC'
   });
@@ -226,7 +229,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
           {/* Temple Background for Success View */}
           <div
             className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply grayscale"
-            style={{ 
+            style={{
               backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
@@ -239,7 +242,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            
+
             <h2 className="text-2xl font-serif text-slate-900 mb-2 tracking-tight">Welcome, {name}</h2>
             <p className="text-slate-500 font-medium mb-6 leading-relaxed text-xs px-4">
               We are grateful to have you at the gathering place today.
@@ -290,7 +293,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
               </div>
             )}
 
-            <button 
+            <button
               onClick={handleReset}
               className="w-full py-4 px-10 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-900/20 active:scale-[0.98] text-xs"
             >
@@ -306,11 +309,11 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
     <div className="max-w-md mx-auto relative px-4 w-full">
       <div className="bg-white shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border border-white animate-in fade-in slide-in-from-bottom-12 duration-1000">
         <div className="p-8 relative overflow-hidden">
-          
+
           {/* Subtle Form Background Image */}
           <div
             className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-multiply"
-            style={{ 
+            style={{
               backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
@@ -326,8 +329,8 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
           <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
             {/* Progress Bar */}
             <div className="w-full bg-slate-100 rounded-full h-1.5 mb-6 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]" 
+              <div
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
@@ -340,22 +343,20 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                   <button
                     type="button"
                     onClick={() => setEventType('Friday Gathering')}
-                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                      eventType === 'Friday Gathering' 
-                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5' 
+                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${eventType === 'Friday Gathering'
+                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5'
                         : 'text-slate-400 hover:text-slate-600'
-                    }`}
+                      }`}
                   >
                     Friday Gathering
                   </button>
                   <button
                     type="button"
                     onClick={() => setEventType('Skills Acquisition')}
-                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                      eventType === 'Skills Acquisition' 
-                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5' 
+                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${eventType === 'Skills Acquisition'
+                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5'
                         : 'text-slate-400 hover:text-slate-600'
-                    }`}
+                      }`}
                   >
                     Skills Acquisition
                   </button>
@@ -373,7 +374,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                   <div className="absolute left-4 text-slate-400 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
                   </div>
-                  <select 
+                  <select
                     id="skill"
                     required
                     value={skillCategory}
@@ -401,7 +402,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <select 
+                  <select
                     id="cluster"
                     required
                     value={cluster}
@@ -428,7 +429,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <select 
+                  <select
                     id="designation"
                     required
                     value={designation}
@@ -455,9 +456,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <input 
+                <input
                   id="date"
-                  type="date" 
+                  type="date"
                   required
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
@@ -475,7 +476,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 <div className="absolute left-4 text-slate-400 pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
                 </div>
-                <select 
+                <select
                   id="ward"
                   required
                   value={ward}
@@ -508,9 +509,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 <div className="absolute left-4 text-slate-400 pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm12 5a1 1 0 100-2H4a1 1 0 100 2h12z" clipRule="evenodd" /></svg>
                 </div>
-                <input 
+                <input
                   id="fullName"
-                  type="text" 
+                  type="text"
                   required
                   autoComplete="off"
                   placeholder={ward ? "Type your name..." : "Select unit first"}
@@ -549,9 +550,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 <div className="absolute left-4 text-slate-400 pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
                 </div>
-                <input 
+                <input
                   id="phone"
-                  type="tel" 
+                  type="tel"
                   required
                   placeholder="080..."
                   value={phone}
@@ -562,14 +563,13 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isSubmitting || !ward || !name || !phone}
-              className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all transform shadow-lg shadow-indigo-500/20 relative group active:scale-[0.98] overflow-hidden mt-8 ${
-                (isSubmitting || !ward || !name || !phone)
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
+              className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all transform shadow-lg shadow-indigo-500/20 relative group active:scale-[0.98] overflow-hidden mt-8 ${(isSubmitting || !ward || !name || !phone)
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
             >
               <div className="relative z-10 flex items-center justify-center gap-4">
                 {isSubmitting ? (
@@ -581,10 +581,10 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     <span className="tracking-widest">SAVING...</span>
                   </>
                 ) : (
-                <>
-                  <span className="tracking-[0.2em]">CONFIRM ATTENDANCE</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                </>
+                  <>
+                    <span className="tracking-[0.2em]">CONFIRM ATTENDANCE</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                  </>
                 )}
               </div>
             </button>
@@ -592,17 +592,17 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
 
           {status.type === 'error' && (
             <div className="mt-8 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-               <div className="bg-red-600 text-white p-2 rounded-lg shadow-lg flex-shrink-0">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                 </svg>
-               </div>
-               <p className="text-xs font-bold leading-relaxed">{status.message}</p>
+              <div className="bg-red-600 text-white p-2 rounded-lg shadow-lg flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <p className="text-xs font-bold leading-relaxed">{status.message}</p>
             </div>
           )}
         </div>
       </div>
-      
+
       {/* Decorative dots below form */}
       <div className="text-center mt-6 opacity-60">
         <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em] font-bold">

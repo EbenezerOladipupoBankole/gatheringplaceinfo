@@ -26,6 +26,8 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [minVisits, setMinVisits] = useState(1);
+  const [forceStandard16, setForceStandard16] = useState(true);
+  const [instructorName, setInstructorName] = useState('');
 
   const { uniqueDates, wardRows, columnTotals, grandTotal } = useMemo(() => {
     const [year, month] = selectedMonth.split('-').map(Number);
@@ -73,7 +75,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
       const rDate = new Date(r.date);
       return rDate.getFullYear() === year &&
         rDate.getMonth() + 1 === month;
-    }).map(r => ({ ...r, ward: normalizeWard(r.ward) }));
+    });
 
     const dates = Array.from(new Set(monthlyRecords.map(r => r.date))).sort();
 
@@ -103,79 +105,108 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
       const clean = (n: string) => n.toLowerCase().trim().replace(/[^a-z\s]/g, '').split(/\s+/).filter(p => p.length > 1);
       const parts1 = clean(n1);
       const parts2 = clean(n2);
-      
+
       if (parts1.length === 0 || parts2.length === 0) return false;
 
       // Identify shorter and longer arrays (by number of tokens)
       const [shorter, longer] = parts1.length <= parts2.length ? [parts1, parts2] : [parts2, parts1];
-      
+
       let matches = 0;
       const usedIndices = new Set<number>();
 
       for (const sPart of shorter) {
         for (let i = 0; i < longer.length; i++) {
           if (usedIndices.has(i)) continue;
-          
+
           const lPart = longer[i];
-          
+
           // 1. Exact match
           if (sPart === lPart) {
             matches++;
             usedIndices.add(i);
             break;
           }
-          
+
           // 2. Levenshtein (Typos)
           const dist = getLevenshteinDistance(sPart, lPart);
           // Allow 1 edit for length >= 3, 2 edits for length >= 6
           const allowed = sPart.length >= 6 ? 2 : (sPart.length >= 3 ? 1 : 0);
           if (dist <= allowed) {
-             matches++;
-             usedIndices.add(i);
-             break;
+            matches++;
+            usedIndices.add(i);
+            break;
           }
 
           // 3. Substring (e.g. Jide in Olajide)
-          if ((lPart.includes(sPart) && lPart.length > sPart.length) || 
-              (sPart.includes(lPart) && sPart.length > lPart.length)) {
-             matches++;
-             usedIndices.add(i);
-             break;
+          if ((lPart.includes(sPart) && lPart.length > sPart.length) ||
+            (sPart.includes(lPart) && sPart.length > lPart.length)) {
+            matches++;
+            usedIndices.add(i);
+            break;
           }
         }
       }
 
       // Require matching all parts of the shorter name representation
-      return matches >= shorter.length; 
+      return matches >= shorter.length;
     };
 
-    const data: Record<string, { name: string; visitCount: number; groups: Record<string, number>; ward: string }[]> = {};
+    // Global tracking to merge people across wards
+    interface PersonData {
+      name: string;
+      visitCount: number;
+      groups: Record<string, number>;
+      wardCounts: Record<string, number>;
+      uniqueVisitKeys: Set<string>;
+    }
+    const globalPersons: PersonData[] = [];
 
     monthlyRecords.forEach(r => {
-      // Determine Grouping Key
-      let key = r.ward; // Default to Ward
+      let nameToUse = r.full_name;
 
-      if (!data[key]) data[key] = [];
+      // Explicit Alias Merging
+      if (normalizeWard(r.ward).includes('Apena')) {
+        const lower = nameToUse.toLowerCase();
+        // Merge "Bamidele Sunday" and "Bamide David"
+        if (lower.includes('bamide') && (lower.includes('david') || lower.includes('sunday'))) {
+          nameToUse = 'Bamidele Sunday';
+        }
+      }
 
       // Use the new similarity check
-      let person = data[key].find(p => areNamesSimilar(p.name, r.full_name));
+      let person = globalPersons.find(p => areNamesSimilar(p.name, nameToUse));
 
       if (!person) {
-        // Convert to Title Case (e.g. "John Doe")
-        const titleCaseName = r.full_name.trim().toLowerCase().split(/\s+/)
+        // Clean name (remove numbers/symbols) and Title Case
+        const cleanName = nameToUse.replace(/[^a-zA-Z\s]/g, '').trim();
+        const titleCaseName = cleanName.toLowerCase().split(/\s+/)
           .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        person = { name: titleCaseName, visitCount: 0, groups: {}, ward: r.ward };
-        data[key].push(person);
+
+        person = { name: titleCaseName || nameToUse, visitCount: 0, groups: {}, wardCounts: {}, uniqueVisitKeys: new Set() };
+        globalPersons.push(person);
       } else {
         // If the new name is more complete, update the stored name to the title-cased version of the new one.
-        if (r.full_name.length > person.name.length) {
-          person.name = r.full_name.trim().toLowerCase().split(/\s+/)
+        const cleanR = nameToUse.replace(/[^a-zA-Z\s]/g, '').trim();
+        const cleanP = person.name.replace(/[^a-zA-Z\s]/g, '').trim();
+        if (cleanR.length > cleanP.length) {
+          person.name = cleanR.toLowerCase().split(/\s+/)
             .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
       }
-      person.visitCount += 1;
 
-      // Track Class/Group
+      // Track Ward Usage
+      const w = normalizeWard(r.ward);
+      person.wardCounts[w] = (person.wardCounts[w] || 0) + 1;
+
+      // Create a unique key for this visit (Date only for transport - 1 trip per day)
+      const visitKey = r.date;
+
+      if (!person.uniqueVisitKeys.has(visitKey)) {
+        person.visitCount += 1;
+        person.uniqueVisitKeys.add(visitKey);
+      }
+
+      // Track Class/Group for ALL records so we see everything they attended
       let group = r.eventType || 'Friday Gathering';
       if (group === 'Skills Acquisition' && r.skillCategory) {
         group = r.skillCategory;
@@ -189,10 +220,37 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
       person.groups[group] = (person.groups[group] || 0) + 1;
     });
 
-    // Filter by minVisits and sort by name
+    // Distribute persons to their primary ward (most frequent)
+    const data: Record<string, PersonData[]> = {};
+    globalPersons.forEach(p => {
+      const primaryWard = Object.entries(p.wardCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+
+      if (!data[primaryWard]) data[primaryWard] = [];
+      data[primaryWard].push(p);
+    });
+
+    // Filter by minVisits, sort by name, and cap visits at 16 (Standard Month limit)
+    // Filter by minVisits, sort by name, and standardize to 16
     Object.keys(data).forEach(key => {
-      data[key] = data[key].filter(p => p.visitCount >= minVisits)
-        .sort((a, b) => a.name.localeCompare(b.name));
+      // 1. Remove "Interested Person" category entirely
+      if (key === 'Interested Person') {
+        delete data[key];
+        return;
+      }
+
+      data[key] = data[key].filter(p => {
+        // 2. Specific filtering requests
+        if (key.includes('Alabata') && p.name.includes('Samuel Dada')) return false;
+        if (key.includes('Apena') && (p.name.includes('Soremi Victoria') || p.name.includes('Samuel James'))) return false;
+
+        return p.visitCount >= minVisits;
+      })
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(p => ({
+          ...p,
+          // Standardize visit count to 16 if forced, otherwise cap actuals at 16
+          visitCount: forceStandard16 ? 16 : Math.min(p.visitCount, 16)
+        }));
 
       // Remove empty keys
       if (data[key].length === 0) {
@@ -202,22 +260,11 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
 
     // Determine keys to iterate over
     let reportKeys = Object.keys(data);
-    const interestedPersonKey = 'Interested Person';
-    const hasInterestedPerson = reportKeys.includes(interestedPersonKey);
-
-    // Filter out 'Interested Person' for sorting
-    reportKeys = reportKeys.filter(key => key !== interestedPersonKey);
-
     // Sort alphabetically
     reportKeys.sort((a, b) => a.localeCompare(b));
 
-    // Add 'Interested Person' back at the end if it exists
-    if (hasInterestedPerson) {
-        reportKeys.push(interestedPersonKey);
-    }
-
     return { dates, data, reportKeys };
-  }, [records, selectedMonth, minVisits, wards]);
+  }, [records, selectedMonth, minVisits, wards, forceStandard16]);
 
   const downloadCSV = () => {
     if (uniqueDates.length === 0) return;
@@ -250,7 +297,11 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
       {viewMode === 'transport' && (
         <style>{`
           @media print {
-            @page { margin: 0.5cm; size: landscape; }
+            @page { margin: 0.3cm; size: landscape; }
+            body { 
+              -webkit-print-color-adjust: exact; 
+              zoom: 0.85;
+            }
             html, body {
               height: auto !important;
               overflow: visible !important;
@@ -315,6 +366,29 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                   value={minVisits}
                   onChange={(e) => setMinVisits(Math.max(1, parseInt(e.target.value) || 1))}
                   className="w-10 text-sm font-bold text-slate-900 outline-none bg-transparent text-center"
+                />
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200">
+                <input
+                  type="checkbox"
+                  id="forceStandard"
+                  checked={forceStandard16}
+                  onChange={(e) => setForceStandard16(e.target.checked)}
+                  className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+                <label htmlFor="forceStandard" className="text-[10px] font-bold uppercase text-slate-500 cursor-pointer select-none">
+                  Force 16
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200">
+                <span className="text-[10px] font-bold uppercase text-slate-500">Leader:</span>
+                <input
+                  type="text"
+                  placeholder="Enter Name"
+                  value={instructorName}
+                  onChange={(e) => setInstructorName(e.target.value)}
+                  className="w-32 text-sm font-bold text-slate-900 outline-none bg-transparent"
                 />
               </div>
             </>
@@ -419,13 +493,13 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
           <div id="transport-report" className="min-h-[500px] bg-white">
             {transportReport.reportKeys.map((groupKey, index) => {
               const persons = transportReport.data[groupKey]!;
-              
+
               return (
-                <div key={groupKey} className="mb-8 p-8 page-break bg-white">
+                <div key={groupKey} className="mb-0 p-4 page-break bg-white">
                   {/* Header */}
-                  <div className="text-center mb-4">
-                    <h1 className="text-2xl font-black text-black uppercase tracking-tight">Africa West Area Gathering Place Daily Attendance Register</h1>
-                    <h2 className="text-xl font-bold text-indigo-900 uppercase mt-2">Consolidated Monthly Report</h2>
+                  <div className="text-center mb-1">
+                    <h1 className="text-lg font-black text-black uppercase tracking-tight">Africa West Area Gathering Place Daily Attendance Register</h1>
+                    <h2 className="text-base font-bold text-indigo-900 uppercase mt-0">Consolidated Monthly Report</h2>
                   </div>
 
                   {/* Meta Info Box */}
@@ -434,7 +508,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                       <div className="w-2/3 p-2 border-r border-amber-800">
                         <span className="font-bold text-black text-sm">Unit:</span>
                         <span className="ml-2 font-bold text-black uppercase">{groupKey}</span>
-                        <span className="ml-4 text-xs text-slate-500">(Abeokuta Nigeria Stake)</span>
+                        <span className="ml-4 font-black text-black text-sm">(Abeokuta Nigeria Stake)</span>
                       </div>
                       <div className="w-1/3 p-2">
                         <span className="font-bold text-black text-sm">Date:</span>
@@ -447,57 +521,57 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                   </div>
 
                   {/* Table */}
-                  <table className="w-full border-collapse border border-amber-800 text-xs">
+                  <table className="w-full border-collapse border border-amber-800 text-[10px]">
                     <thead>
                       <tr className="text-center">
-                        <th className="border border-amber-800 p-1 w-10 text-amber-900 font-bold">S/N</th>
-                        <th className="border border-amber-800 p-1 text-amber-900 font-bold">Member Name</th>
-                        <th className="border border-amber-800 p-1 text-amber-900 font-bold">Ward/Branch</th>
-                        <th className="border border-amber-800 p-1 text-amber-900 font-bold">Class/Group</th>
-                        <th className="border border-amber-800 p-1 w-16 text-amber-900 font-bold">Total Visits</th>
+                        <th className="border border-amber-800 p-0.5 w-8 text-amber-900 font-bold">S/N</th>
+                        <th className="border border-amber-800 p-0.5 text-amber-900 font-bold">Member Name</th>
+                        <th className="border border-amber-800 p-0.5 text-amber-900 font-bold">Ward/Branch</th>
+                        <th className="border border-amber-800 p-0.5 text-amber-900 font-bold">Class/Group</th>
+                        <th className="border border-amber-800 p-0.5 w-12 text-amber-900 font-bold">Total Visits</th>
                       </tr>
                     </thead>
                     <tbody>
                       {persons.map((person, idx) => {
-                        // List all groups attended, separated by comma
+                        // List all groups attended
                         const allGroups = Object.keys(person.groups).sort().join(', ');
 
-                        return (<tr key={person.name} className="h-8">
-                          <td className="border border-amber-800 p-1 text-center font-bold text-black">{idx + 1}</td>
-                          <td className="border border-amber-800 p-1 px-2 font-bold text-black">{person.name}</td>
-                          <td className="border border-amber-800 p-1 px-2 text-black">{person.ward}</td>
-                          <td className="border border-amber-800 p-1 px-2 text-black">{allGroups}</td>
-                          <td className="border border-amber-800 p-1 text-center font-bold text-black">{person.visitCount}</td>
+                        return (<tr key={person.name} className="h-5">
+                          <td className="border border-amber-800 p-0.5 text-center font-bold text-black">{idx + 1}</td>
+                          <td className="border border-amber-800 p-0.5 px-2 font-bold text-black">{person.name}</td>
+                          <td className="border border-amber-800 p-0.5 px-2 text-black">{groupKey}</td>
+                          <td className="border border-amber-800 p-0.5 px-2 text-black">{allGroups}</td>
+                          <td className="border border-amber-800 p-0.5 text-center font-bold text-black">{forceStandard16 ? 16 : Math.min(person.visitCount, 16)}</td>
                         </tr>
                         );
                       })}
                       {/* Empty rows filler if needed, or just let it shrink */}
                       {Array.from({ length: Math.max(0, 15 - persons.length) }).map((_, i) => (
-                        <tr key={`empty-${i}`} className="h-8">
-                          <td className="border border-amber-800 p-1 text-center text-slate-300">{persons.length + i + 1}</td>
-                          <td className="border border-amber-800 p-1"></td>
-                          <td className="border border-amber-800 p-1"></td>
-                          <td className="border border-amber-800 p-1"></td>
-                          <td className="border border-amber-800 p-1"></td>
+                        <tr key={`empty-${i}`} className="h-5">
+                          <td className="border border-amber-800 p-0.5 text-center text-slate-300">{persons.length + i + 1}</td>
+                          <td className="border border-amber-800 p-0.5"></td>
+                          <td className="border border-amber-800 p-0.5"></td>
+                          <td className="border border-amber-800 p-0.5"></td>
+                          <td className="border border-amber-800 p-0.5"></td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot>
-                      <tr className="font-bold text-black bg-amber-50">
-                        <td colSpan={4} className="border border-amber-800 p-1 px-2 text-right">TOTAL VISITS</td>
-                        <td className="border border-amber-800 p-1 text-center">{persons.reduce((sum, p) => sum + p.visitCount, 0)}</td>
-                      </tr>
-                    </tfoot>
                   </table>
 
+                  <div className="mt-4 mb-2 text-sm font-black text-slate-900 uppercase tracking-wide">
+                    Expected Visit for the month for each YA is _____
+                  </div>
+
                   {/* Footer */}
-                  <div className="flex justify-between items-center mt-8 border-t border-slate-200 pt-8 text-sm font-bold text-black">
+                  <div className="flex justify-between items-center mt-4 border-t border-slate-200 pt-4 text-sm font-bold text-black">
                     <div className="flex items-center gap-2">
-                      <span>Instructor Name:</span>
-                      <div className="border-b border-black w-48 h-4"></div>
+                      <span>Stake YSA Leaders:</span>
+                      <div className="border-b border-black w-48 h-4 flex items-end">
+                        <span className="w-full text-center mb-[-4px]">{instructorName}</span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span>Signature:</span>
+                      <span>E-Signature:</span>
                       <div className="border-b border-black w-32 h-4"></div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -522,7 +596,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

@@ -32,8 +32,9 @@ export const attendanceService = {
     }
   },
 
-  saveRecord: async (name: string, phone: string, ward: string, eventType?: string, skillCategory?: string): Promise<{ success: boolean; message: string }> => {
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' });
+  saveRecord: async (name: string, phone: string, ward: string, eventType?: string, skillCategory?: string, date?: string): Promise<{ success: boolean; message: string }> => {
+    // Use provided date or fallback to today (YYYY-MM-DD)
+    const today = date || new Date().toISOString().split('T')[0];
 
     try {
       // Try to check for duplicates (This works for Admins, but might fail for Public due to security rules)
