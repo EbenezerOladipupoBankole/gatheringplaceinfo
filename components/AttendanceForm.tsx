@@ -34,7 +34,7 @@ const CLUSTERS = [
 ];
 
 interface AttendanceFormProps {
-  preselectedEvent?: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class';
+  preselectedEvent?: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Feast of Love';
 }
 
 const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => {
@@ -44,7 +44,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [eventType, setEventType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class'>(preselectedEvent || 'Friday Gathering');
+  const [eventType, setEventType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Feast of Love'>(preselectedEvent || 'Friday Gathering');
   const [designation, setDesignation] = useState('');
   const [skillCategory, setSkillCategory] = useState('');
   const [cluster, setCluster] = useState('');
@@ -218,38 +218,57 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
   const completedSteps = requiredFields.filter(Boolean).length;
   const progressPercent = (completedSteps / requiredFields.length) * 100;
 
+  const isValentine = eventType === 'Feast of Love';
+
   if (status.type === 'success') {
     return (
       <div className="max-w-md mx-auto animate-in fade-in zoom-in-95 duration-1000">
-        <div className="bg-white rounded-[2.5rem] p-8 text-center shadow-2xl shadow-indigo-500/10 border border-white relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full" />
-
-          {/* Temple Background for Success View */}
-          <div
-            className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply grayscale"
-            style={{
-              backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          />
+        <div className={`bg-white rounded-[2.5rem] p-8 text-center shadow-2xl border border-white relative overflow-hidden ${isValentine ? 'shadow-rose-500/20' : 'shadow-indigo-500/10'}`}>
+          {isValentine ? (
+            <>
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-400" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/10 blur-[80px] rounded-full" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 blur-[80px] rounded-full" />
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 3.22l-.61-.6a5.5 5.5 0 0 0-7.78 7.77L10 18.78l8.39-8.4a5.5 5.5 0 0 0-7.78-7.77l-.61.61z' fill='%23e11d48' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")` }} />
+            </>
+          ) : (
+            <>
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-300 via-amber-500 to-amber-300" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full" />
+              <div
+                className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-multiply grayscale"
+                style={{
+                  backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              />
+            </>
+          )}
 
           <div className="relative z-10">
-            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ${isValentine ? 'bg-rose-50' : 'bg-amber-50'}`}>
+              {isValentine ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-rose-500 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </div>
 
-            <h2 className="text-2xl font-serif text-slate-900 mb-2 tracking-tight">Welcome, {name}</h2>
+            <h2 className="text-2xl font-serif text-slate-900 mb-2 tracking-tight">
+              {isValentine ? `Happy Valentine's, ${name.split(' ')[0]}!` : `Welcome, ${name}`}
+            </h2>
             <p className="text-slate-500 font-medium mb-6 leading-relaxed text-xs px-4">
               We are grateful to have you at the gathering place today.
             </p>
 
-            <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl mb-6 text-left space-y-2 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+            <div className={`bg-slate-50 border border-slate-100 p-4 rounded-2xl mb-6 text-left space-y-2 relative overflow-hidden`}>
+              <div className={`absolute top-0 left-0 w-1 h-full ${isValentine ? 'bg-rose-500' : 'bg-amber-500'}`} />
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Event</span>
                 <span className="text-sm font-semibold text-slate-800">{eventType}</span>
@@ -287,7 +306,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                 <p className="text-slate-600 font-serif italic text-lg leading-relaxed mb-3">
                   "{dailyScripture.text}"
                 </p>
-                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isValentine ? 'text-rose-600' : 'text-amber-600'}`}>
                   — {dailyScripture.source}
                 </p>
               </div>
@@ -308,20 +327,24 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
   return (
     <div className="max-w-md mx-auto relative px-4 w-full">
       <div className="bg-white shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border border-white animate-in fade-in slide-in-from-bottom-12 duration-1000">
-        <div className="p-8 relative overflow-hidden">
+        <div className={`p-8 relative overflow-hidden ${isValentine ? 'bg-rose-50/30' : ''}`}>
 
           {/* Subtle Form Background Image */}
           <div
-            className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-multiply"
+            className={`absolute inset-0 pointer-events-none mix-blend-multiply ${isValentine ? 'opacity-[0.03]' : 'opacity-[0.02]'}`}
             style={{
-              backgroundImage: 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
+              backgroundImage: isValentine
+                ? `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 3.22l-.61-.6a5.5 5.5 0 0 0-7.78 7.77L10 18.78l8.39-8.4a5.5 5.5 0 0 0-7.78-7.77l-.61.61z' fill='%23e11d48' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`
+                : 'url("https://images.unsplash.com/photo-1590616867264-5b45264834b7?q=80&w=2000&auto=format&fit=crop")',
+              backgroundSize: isValentine ? 'auto' : 'cover',
+              backgroundPosition: 'center',
             }}
           />
 
           <header className="text-center mb-8 relative z-10">
-            <img src={logo} alt="Gathering Place" className="w-12 h-12 mx-auto mb-4 rounded-2xl shadow-lg shadow-indigo-500/20" />
+            <div className={`w-12 h-12 mx-auto mb-4 rounded-2xl shadow-lg flex items-center justify-center bg-white p-1 ${isValentine ? 'shadow-rose-500/20' : 'shadow-indigo-500/20'}`}>
+              <img src={logo} alt="Gathering Place" className="w-full h-full object-contain" />
+            </div>
             <h1 className="text-3xl font-black text-slate-900 mb-1 tracking-tight">{eventType}</h1>
             <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">{displayDate}</p>
           </header>
@@ -330,7 +353,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
             {/* Progress Bar */}
             <div className="w-full bg-slate-100 rounded-full h-1.5 mb-6 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                className={`h-full rounded-full transition-all duration-500 ease-out ${isValentine ? 'bg-gradient-to-r from-rose-400 to-pink-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]'}`}
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
@@ -344,8 +367,8 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     type="button"
                     onClick={() => setEventType('Friday Gathering')}
                     className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${eventType === 'Friday Gathering'
-                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5'
-                        : 'text-slate-400 hover:text-slate-600'
+                      ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5'
+                      : 'text-slate-400 hover:text-slate-600'
                       }`}
                   >
                     Friday Gathering
@@ -354,8 +377,8 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     type="button"
                     onClick={() => setEventType('Skills Acquisition')}
                     className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${eventType === 'Skills Acquisition'
-                        ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5'
-                        : 'text-slate-400 hover:text-slate-600'
+                      ? 'bg-white text-indigo-900 shadow-md shadow-slate-200 ring-1 ring-black/5'
+                      : 'text-slate-400 hover:text-slate-600'
                       }`}
                   >
                     Skills Acquisition
@@ -367,7 +390,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
             {/* Skill Selection (Conditional) */}
             {eventType === 'Skills Acquisition' && (
               <div className="space-y-2 group animate-in fade-in slide-in-from-top-2 duration-300">
-                <label htmlFor="skill" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+                <label htmlFor="skill" className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors ${isValentine ? 'group-focus-within:text-rose-600' : 'group-focus-within:text-indigo-600'}`}>
                   Skill Department
                 </label>
                 <div className="relative flex items-center">
@@ -379,7 +402,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     required
                     value={skillCategory}
                     onChange={(e) => setSkillCategory(e.target.value)}
-                    className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100"
+                    className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100 ${isValentine ? 'focus:ring-rose-500' : 'focus:ring-indigo-500'}`}
                   >
                     <option value="" disabled>Select a skill...</option>
                     {SKILLS.map(s => (
@@ -393,7 +416,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
             {/* Cluster Selection (Conditional) */}
             {eventType === 'Institute Cluster' && (
               <div className="space-y-2 group animate-in fade-in slide-in-from-top-2 duration-300">
-                <label htmlFor="cluster" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+                <label htmlFor="cluster" className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors ${isValentine ? 'group-focus-within:text-rose-600' : 'group-focus-within:text-indigo-600'}`}>
                   Cluster Location
                 </label>
                 <div className="relative flex items-center">
@@ -407,7 +430,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     required
                     value={cluster}
                     onChange={(e) => setCluster(e.target.value)}
-                    className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100"
+                    className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100 ${isValentine ? 'focus:ring-rose-500' : 'focus:ring-indigo-500'}`}
                   >
                     <option value="" disabled>Select a cluster...</option>
                     {CLUSTERS.map(c => (
@@ -447,7 +470,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
 
             {/* --- DATE SELECTION --- */}
             <div className="space-y-2 group">
-              <label htmlFor="date" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+              <label htmlFor="date" className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors ${isValentine ? 'group-focus-within:text-rose-600' : 'group-focus-within:text-indigo-600'}`}>
                 Date
               </label>
               <div className="relative flex items-center">
@@ -462,14 +485,14 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                   required
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-800 text-sm shadow-sm hover:bg-slate-100"
+                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:bg-white outline-none transition-all font-bold text-slate-800 text-sm shadow-sm hover:bg-slate-100 ${isValentine ? 'focus:ring-rose-500' : 'focus:ring-indigo-500'}`}
                 />
               </div>
             </div>
 
             {/* --- STEP 2: UNIT SELECTION --- */}
             <div className="space-y-2 group">
-              <label htmlFor="ward" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+              <label htmlFor="ward" className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors ${isValentine ? 'group-focus-within:text-rose-600' : 'group-focus-within:text-indigo-600'}`}>
                 Ward / Branch
               </label>
               <div className="relative flex items-center">
@@ -485,7 +508,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                     setName('');
                     setShowSuggestions(false);
                   }}
-                  className="w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100"
+                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:bg-white outline-none transition-all appearance-none font-bold text-slate-800 cursor-pointer text-sm shadow-sm hover:bg-slate-100 ${isValentine ? 'focus:ring-rose-500' : 'focus:ring-indigo-500'}`}
                 >
                   <option value="" disabled>Select your unit...</option>
                   {availableWards.map(w => (
@@ -502,7 +525,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
 
             {/* --- STEP 3: NAME INPUT --- */}
             <div className="space-y-2 relative group" ref={suggestionRef}>
-              <label htmlFor="fullName" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+              <label htmlFor="fullName" className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors ${isValentine ? 'group-focus-within:text-rose-600' : 'group-focus-within:text-indigo-600'}`}>
                 Full Name
               </label>
               <div className="relative flex items-center">
@@ -517,7 +540,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                   placeholder={ward ? "Type your name..." : "Select unit first"}
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-sm hover:bg-slate-100 ${!ward ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:bg-white outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-sm hover:bg-slate-100 ${!ward ? 'opacity-50 cursor-not-allowed' : ''} ${isValentine ? 'focus:ring-rose-500' : 'focus:ring-indigo-500'}`}
                   disabled={!ward}
                 />
               </div>
@@ -531,7 +554,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                         key={idx}
                         type="button"
                         onClick={() => selectSuggestion(s)}
-                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 hover:text-amber-600 transition-all flex items-center gap-3 group/btn"
+                        className={`w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-3 group/btn ${isValentine ? 'hover:text-rose-600' : 'hover:text-amber-600'}`}
                       >
                         <span className="font-bold text-sm text-slate-600 group-hover/btn:text-slate-900">{s}</span>
                       </button>
@@ -543,7 +566,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
 
             {/* --- STEP 4: PHONE NUMBER --- */}
             <div className="space-y-2 group">
-              <label htmlFor="phone" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-indigo-600">
+              <label htmlFor="phone" className={`text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors ${isValentine ? 'group-focus-within:text-rose-600' : 'group-focus-within:text-indigo-600'}`}>
                 Phone Number
               </label>
               <div className="relative flex items-center">
@@ -557,7 +580,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
                   placeholder="080..."
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-sm hover:bg-slate-100 ${!ward ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full bg-slate-50 border-0 ring-1 ring-slate-200 rounded-2xl pl-11 pr-4 py-4 focus:ring-2 focus:bg-white outline-none transition-all font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-sm hover:bg-slate-100 ${!ward ? 'opacity-50 cursor-not-allowed' : ''} ${isValentine ? 'focus:ring-rose-500' : 'focus:ring-indigo-500'}`}
                   disabled={!ward}
                 />
               </div>
@@ -566,9 +589,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
             <button
               type="submit"
               disabled={isSubmitting || !ward || !name || !phone}
-              className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all transform shadow-lg shadow-indigo-500/20 relative group active:scale-[0.98] overflow-hidden mt-8 ${(isSubmitting || !ward || !name || !phone)
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700'
+              className={`w-full py-4 rounded-2xl font-black text-xs text-white transition-all transform shadow-lg relative group active:scale-[0.98] overflow-hidden mt-8 ${isValentine ? 'shadow-rose-500/20' : 'shadow-indigo-500/20'} ${(isSubmitting || !ward || !name || !phone)
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : (isValentine ? 'bg-rose-500 hover:bg-rose-600' : 'bg-indigo-600 hover:bg-indigo-700')
                 }`}
             >
               <div className="relative z-10 flex items-center justify-center gap-4">
@@ -606,7 +629,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ preselectedEvent }) => 
       {/* Decorative dots below form */}
       <div className="text-center mt-6 opacity-60">
         <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em] font-bold">
-          {eventType === 'Friday Gathering' ? 'Young Single Adult Gathering' : (eventType === 'Skills Acquisition' ? 'YSA Skills Acquisition' : (eventType === 'Institute Cluster' ? 'Institute Cluster' : 'Missionary Preparation'))}
+          {eventType === 'Friday Gathering' ? 'Young Single Adult Gathering' : (eventType === 'Skills Acquisition' ? 'YSA Skills Acquisition' : (eventType === 'Institute Cluster' ? 'Institute Cluster' : (eventType === 'Feast of Love' ? 'Feast of Love' : 'Missionary Preparation')))}
         </p>
       </div>
     </div>

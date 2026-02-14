@@ -95,10 +95,11 @@ const App: React.FC = () => {
     switch (view) {
       case ViewMode.USER_FORM:
         if (selectedProgram) {
-          let eventType: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' = 'Friday Gathering';
+          let eventType: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Feast of Love' = 'Friday Gathering';
           if (selectedProgram === 'skills') eventType = 'Skills Acquisition';
           else if (selectedProgram === 'cluster') eventType = 'Institute Cluster';
           else if (selectedProgram === 'missionary') eventType = 'Missionary Preparatory Class';
+          else if (selectedProgram === 'valentine') eventType = 'Feast of Love';
 
           return (
             <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center justify-center py-8 px-4 relative z-10 bg-slate-50">
@@ -155,6 +156,16 @@ const App: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                   {
+                    id: 'valentine',
+                    title: "Feast of Love",
+                    day: 'Today Only',
+                    sub: 'Love & Friendship',
+                    img: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&auto=format&fit=crop&q=60',
+                    desc: 'A special gathering to celebrate love, friendship, and unity.',
+                    icon: <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>,
+                    special: true
+                  },
+                  {
                     id: 'skills',
                     title: 'Skills Acquisition',
                     day: 'Tuesday',
@@ -194,7 +205,7 @@ const App: React.FC = () => {
                   <button
                     key={program.id}
                     onClick={() => setSelectedProgram(program.id)}
-                    className="group relative flex flex-col bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 hover:border-indigo-100 transition-all duration-500 overflow-hidden text-left h-full animate-in fade-in slide-in-from-bottom-8"
+                    className={`group relative flex flex-col bg-white rounded-[2rem] border shadow-sm transition-all duration-500 overflow-hidden text-left h-full animate-in fade-in slide-in-from-bottom-8 ${program.special ? 'border-rose-200 shadow-rose-100 hover:shadow-rose-200 hover:border-rose-300 ring-1 ring-rose-50' : 'border-slate-200 hover:shadow-2xl hover:shadow-slate-200/50 hover:border-indigo-100'}`}
                     style={{ animationDelay: `${idx * 100}ms` }}
                   >
                     <div className="h-48 w-full overflow-hidden relative">
@@ -205,17 +216,24 @@ const App: React.FC = () => {
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute top-4 right-4 z-20">
-                        <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-sm border border-white/20">
+                        <span className={`px-3 py-1 rounded-full backdrop-blur-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-white/20 ${program.special ? 'bg-rose-500 text-white shadow-rose-500/30' : 'bg-white/90 text-slate-900'}`}>
                           {program.day}
                         </span>
                       </div>
+                      {program.special && (
+                        <div className="absolute top-4 left-4 z-20">
+                          <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-rose-600 text-[10px] font-black uppercase tracking-widest shadow-sm border border-white/20 animate-pulse">
+                            Special Event
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-8 flex flex-col flex-1">
                       <div className="mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 mb-6 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-300 shadow-sm">
+                        <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-6 transition-all duration-300 shadow-sm ${program.special ? 'bg-rose-50 border-rose-100 text-rose-500 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-500' : 'bg-slate-50 border-slate-100 text-slate-600 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600'}`}>
                           {program.icon}
                         </div>
-                        <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight group-hover:text-indigo-600 transition-colors">
+                        <h3 className={`text-2xl font-black text-slate-900 mb-2 tracking-tight transition-colors ${program.special ? 'group-hover:text-rose-600' : 'group-hover:text-indigo-600'}`}>
                           {program.title}
                         </h3>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -225,7 +243,7 @@ const App: React.FC = () => {
                       <p className="text-slate-500 text-sm leading-relaxed font-medium mb-8">
                         {program.desc}
                       </p>
-                      <div className="mt-auto flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                      <div className={`mt-auto flex items-center gap-2 font-black text-xs uppercase tracking-widest group-hover:gap-3 transition-all ${program.special ? 'text-rose-600' : 'text-indigo-600'}`}>
                         Check In Now
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />

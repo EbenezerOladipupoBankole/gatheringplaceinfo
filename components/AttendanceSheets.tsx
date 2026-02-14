@@ -26,7 +26,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [minVisits, setMinVisits] = useState(1);
-  const [forceStandard16, setForceStandard16] = useState(true);
+  const [forceStandard16, setForceStandard16] = useState(false);
   const [instructorName, setInstructorName] = useState('');
 
   const { uniqueDates, wardRows, columnTotals, grandTotal } = useMemo(() => {
@@ -248,8 +248,8 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(p => ({
           ...p,
-          // Standardize visit count to 16 if forced, otherwise cap actuals at 16
-          visitCount: forceStandard16 ? 16 : Math.min(p.visitCount, 16)
+          // Standardize visit count to 16 if forced, otherwise use actuals
+          visitCount: forceStandard16 ? 16 : p.visitCount
         }));
 
       // Remove empty keys
@@ -266,14 +266,24 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     return { dates, data, reportKeys };
   }, [records, selectedMonth, minVisits, wards, forceStandard16]);
 
+  const startingIndices = useMemo(() => {
+    const indices: Record<string, number> = {};
+    let currentTotal = 0;
+    transportReport.reportKeys.forEach(key => {
+      indices[key] = currentTotal;
+      currentTotal += (transportReport.data[key]?.length || 0);
+    });
+    return indices;
+  }, [transportReport]);
+
   const downloadCSV = () => {
     if (uniqueDates.length === 0) return;
-    const header = ['Unit', ...uniqueDates, 'Total'].join(',');
-    const rows = wardRows.map(row => {
+    const header = ['S/N', 'Unit', ...uniqueDates, 'Total'].join(',');
+    const rows = wardRows.map((row, index) => {
       const counts = uniqueDates.map(date => row.counts[date] || 0).join(',');
-      return `"${row.ward}",${counts},${row.total}`;
+      return `${index + 1},"${row.ward}",${counts},${row.total}`;
     });
-    const footer = `TOTAL,${uniqueDates.map(d => columnTotals[d]).join(',')},${grandTotal}`;
+    const footer = `,TOTAL,${uniqueDates.map(d => columnTotals[d]).join(',')},${grandTotal}`;
     const csvContent = [header, ...rows, footer].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -281,6 +291,50 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     const link = document.createElement('a');
     link.setAttribute('href', url);
     link.setAttribute('download', `${eventType.replace(/\s+/g, '_')}_${selectedMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadWord = () => {
+    if (uniqueDates.length === 0) return;
+
+    const tableHTML = `
+      <h2 style="text-align: center; font-family: Arial, sans-serif;">${eventType} - ${new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
+      <table border="1" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 12px;">
+        <thead>
+          <tr style="background-color: #f0f0f0;">
+            <th style="padding: 5px; text-align: left;">Unit</th>
+            ${uniqueDates.map(date => `<th style="padding: 5px; text-align: center;">${formatDate(date, { day: 'numeric', month: 'short' })}</th>`).join('')}
+            <th style="padding: 5px; text-align: center;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${wardRows.map(row => `
+            <tr>
+              <td style="padding: 5px;">${row.ward}</td>
+              ${uniqueDates.map(date => `<td style="padding: 5px; text-align: center;">${row.counts[date] > 0 ? row.counts[date] : '-'}</td>`).join('')}
+              <td style="padding: 5px; text-align: center; font-weight: bold;">${row.total}</td>
+            </tr>
+          `).join('')}
+          <tr style="background-color: #333; color: white;">
+            <td style="padding: 5px; font-weight: bold;">Grand Total</td>
+            ${uniqueDates.map(date => `<td style="padding: 5px; text-align: center;">${columnTotals[date]}</td>`).join('')}
+            <td style="padding: 5px; text-align: center; font-weight: bold;">${grandTotal}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Attendance Matrix</title></head><body>`;
+    const footer = "</body></html>";
+    const sourceHTML = header + tableHTML + footer;
+
+    const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${eventType.replace(/\s+/g, '_')}_${selectedMonth}.doc`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -294,8 +348,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {viewMode === 'transport' && (
-        <style>{`
+      <style>{`
           @media print {
             @page { margin: 0.3cm; size: landscape; }
             body { 
@@ -308,8 +361,9 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
             }
             body { -webkit-print-color-adjust: exact; }
             body * { visibility: hidden; }
-            #transport-report, #transport-report * { visibility: visible; }
-            #transport-report { 
+            /* Allow both report containers to be visible when printing */
+            #transport-report, #transport-report *, #matrix-report, #matrix-report * { visibility: visible; }
+            #transport-report, #matrix-report { 
               position: absolute; 
               left: 0; 
               top: 0; 
@@ -327,7 +381,6 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
             }
           }
         `}</style>
-      )}
       <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h3 className="text-lg font-bold text-slate-900">Attendance Sheets</h3>
@@ -402,16 +455,34 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
           />
 
           {viewMode === 'matrix' ? (
-            <button
-              onClick={downloadCSV}
-              disabled={uniqueDates.length === 0}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              Download CSV
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={downloadCSV}
+                disabled={uniqueDates.length === 0}
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                CSV
+              </button>
+              <button
+                onClick={downloadWord}
+                disabled={uniqueDates.length === 0}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
+                Word
+              </button>
+              <button
+                onClick={() => window.print()}
+                disabled={uniqueDates.length === 0}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0v3H7V4h6zm-8 7.414l2.293 2.293a1 1 0 001.414 0L16 6.586V9a1 1 0 011 1v3a1 1 0 01-1 1h-1v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2H4a1 1 0 01-1-1V9a1 1 0 011-1h2.586z" clipRule="evenodd" /></svg>
+                Print / PDF
+              </button>
+            </div>
           ) : (
             <button
               onClick={() => window.print()}
@@ -427,7 +498,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {viewMode === 'matrix' ? (
           uniqueDates.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div id="matrix-report" className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
@@ -493,6 +564,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
           <div id="transport-report" className="min-h-[500px] bg-white">
             {transportReport.reportKeys.map((groupKey, index) => {
               const persons = transportReport.data[groupKey]!;
+              const startIndex = startingIndices[groupKey];
 
               return (
                 <div key={groupKey} className="mb-0 p-4 page-break bg-white">
@@ -537,18 +609,18 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                         const allGroups = Object.keys(person.groups).sort().join(', ');
 
                         return (<tr key={person.name} className="h-5">
-                          <td className="border border-amber-800 p-0.5 text-center font-bold text-black">{idx + 1}</td>
+                          <td className="border border-amber-800 p-0.5 text-center font-bold text-black">{startIndex + idx + 1}</td>
                           <td className="border border-amber-800 p-0.5 px-2 font-bold text-black">{person.name}</td>
                           <td className="border border-amber-800 p-0.5 px-2 text-black">{groupKey}</td>
                           <td className="border border-amber-800 p-0.5 px-2 text-black">{allGroups}</td>
-                          <td className="border border-amber-800 p-0.5 text-center font-bold text-black">{forceStandard16 ? 16 : Math.min(person.visitCount, 16)}</td>
+                          <td className="border border-amber-800 p-0.5 text-center font-bold text-black">{person.visitCount}</td>
                         </tr>
                         );
                       })}
                       {/* Empty rows filler if needed, or just let it shrink */}
                       {Array.from({ length: Math.max(0, 15 - persons.length) }).map((_, i) => (
                         <tr key={`empty-${i}`} className="h-5">
-                          <td className="border border-amber-800 p-0.5 text-center text-slate-300">{persons.length + i + 1}</td>
+                          <td className="border border-amber-800 p-0.5 text-center text-slate-300"></td>
                           <td className="border border-amber-800 p-0.5"></td>
                           <td className="border border-amber-800 p-0.5"></td>
                           <td className="border border-amber-800 p-0.5"></td>
