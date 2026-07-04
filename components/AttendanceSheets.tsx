@@ -74,7 +74,8 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     const monthlyRecords = records.filter(r => {
       const rDate = new Date(r.date);
       return rDate.getFullYear() === year &&
-        rDate.getMonth() + 1 === month;
+        rDate.getMonth() + 1 === month &&
+        r.eventType !== 'Feast of Love';
     });
 
     const dates = Array.from(new Set(monthlyRecords.map(r => r.date))).sort();
@@ -340,6 +341,89 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
     document.body.removeChild(link);
   };
 
+  const downloadTransportWord = () => {
+    if (transportReport.reportKeys.length === 0) return;
+
+    let contentHTML = '';
+
+    transportReport.reportKeys.forEach((groupKey) => {
+      const persons = transportReport.data[groupKey]!;
+      const startIndex = startingIndices[groupKey];
+
+      contentHTML += `
+        <div style="page-break-after: always; font-family: Arial, sans-serif; margin-bottom: 20px;">
+          <div style="text-align: center; margin-bottom: 10px;">
+            <h1 style="font-size: 18px; font-weight: 900; text-transform: uppercase; margin: 0;">Africa West Area Gathering Place Daily Attendance Register</h1>
+            <h2 style="font-size: 16px; font-weight: 700; color: #312e81; text-transform: uppercase; margin: 5px 0 0 0;">Consolidated Monthly Report</h2>
+          </div>
+
+          <div style="border: 1px solid #92400e; margin-bottom: 0;">
+            <div style="border-bottom: 1px solid #92400e; padding: 5px; display: flex; justify-content: space-between;">
+               <span style="font-weight: bold;">Unit: <span style="text-transform: uppercase;">${groupKey}</span> (Abeokuta Nigeria Stake)</span>
+               <span style="font-weight: bold;">Date: ${new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+            </div>
+            <div style="text-align: center; background-color: #fffbeb; padding: 4px; font-weight: 700; font-size: 14px; text-transform: uppercase; color: #000;">
+              Participants List
+            </div>
+          </div>
+
+          <table border="1" style="border-collapse: collapse; width: 100%; font-size: 10px; border: 1px solid #92400e;">
+            <thead>
+              <tr style="text-align: center;">
+                <th style="border: 1px solid #92400e; padding: 4px; width: 30px; color: #78350f; font-weight: 700;">S/N</th>
+                <th style="border: 1px solid #92400e; padding: 4px; color: #78350f; font-weight: 700;">Member Name</th>
+                <th style="border: 1px solid #92400e; padding: 4px; color: #78350f; font-weight: 700;">Ward/Branch</th>
+                <th style="border: 1px solid #92400e; padding: 4px; color: #78350f; font-weight: 700;">Class/Group</th>
+                <th style="border: 1px solid #92400e; padding: 4px; width: 50px; color: #78350f; font-weight: 700;">Total Visits</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${persons.map((person, idx) => {
+        const allGroups = Object.keys(person.groups).sort().join(', ');
+        return `
+                  <tr>
+                    <td style="border: 1px solid #92400e; padding: 4px; text-align: center; font-weight: 700;">${startIndex + idx + 1}</td>
+                    <td style="border: 1px solid #92400e; padding: 4px;">${person.name}</td>
+                    <td style="border: 1px solid #92400e; padding: 4px;">${groupKey}</td>
+                    <td style="border: 1px solid #92400e; padding: 4px;">${allGroups}</td>
+                    <td style="border: 1px solid #92400e; padding: 4px; text-align: center; font-weight: 700;">${person.visitCount}</td>
+                  </tr>
+                `;
+      }).join('')}
+              ${Array.from({ length: Math.max(0, 15 - persons.length) }).map(() => `
+                <tr>
+                  <td style="border: 1px solid #92400e; padding: 10px;"></td>
+                  <td style="border: 1px solid #92400e; padding: 10px;"></td>
+                  <td style="border: 1px solid #92400e; padding: 10px;"></td>
+                  <td style="border: 1px solid #92400e; padding: 10px;"></td>
+                  <td style="border: 1px solid #92400e; padding: 10px;"></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 16px; margin-bottom: 8px; font-size: 12px; font-weight: 900; text-transform: uppercase;">
+            Expected Visit for the month for each YA is <span style="text-decoration: underline;">21</span>
+          </div>
+          <br style="page-break-after: always;" />
+        </div>
+      `;
+    });
+
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Transport Report</title></head><body>`;
+    const footer = "</body></html>";
+    const sourceHTML = header + contentHTML + footer;
+
+    const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Transport_Report_${selectedMonth}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const formatDate = (dateStr: string, options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', weekday: 'short' }) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
@@ -484,13 +568,22 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => window.print()}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0v3H7V4h6zm-8 7.414l2.293 2.293a1 1 0 001.414 0L16 6.586V9a1 1 0 011 1v3a1 1 0 01-1 1h-1v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2H4a1 1 0 01-1-1V9a1 1 0 011-1h2.586z" clipRule="evenodd" /></svg>
-              Print Report
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={downloadTransportWord}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
+                Download Word
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0v3H7V4h6zm-8 7.414l2.293 2.293a1 1 0 001.414 0L16 6.586V9a1 1 0 011 1v3a1 1 0 01-1 1h-1v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2H4a1 1 0 01-1-1V9a1 1 0 011-1h2.586z" clipRule="evenodd" /></svg>
+                Print Report
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -631,7 +724,7 @@ const AttendanceSheets: React.FC<AttendanceSheetsProps> = ({ records, wards, eve
                   </table>
 
                   <div className="mt-4 mb-2 text-sm font-black text-slate-900 uppercase tracking-wide">
-                    Expected Visit for the month for each YA is _____
+                    Expected Visit for the month for each YA is <span className="underline">21</span>
                   </div>
 
                   {/* Footer */}

@@ -32,7 +32,7 @@ const CLUSTERS = [
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('analytics');
-  const [dashboardType, setDashboardType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Feast of Love'>('Friday Gathering');
+  const [dashboardType, setDashboardType] = useState<'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Devotional' | 'Missionary Departure' | 'Movie Night'>('Friday Gathering');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [wards, setWards] = useState<string[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
@@ -282,14 +282,43 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
   const downloadCSV = () => {
     if (filteredRecords.length === 0) return;
-    const headers = ['Full Name', 'Phone Number', 'Ward', 'Date', 'Timestamp'];
-    const csvRows = filteredRecords.map(r => [
-      `"${r.full_name.replace(/"/g, '""')}"`,
-      `"${r.phone_number}"`,
-      `"${r.ward}"`,
-      r.date,
-      new Date(r.timestamp).toISOString()
-    ].join(','));
+    
+    const headers = ['Full Name', 'Phone Number', 'Unit', 'Date', 'Time Marked'];
+    if (dashboardType === 'Skills Acquisition') {
+      headers.push('Skill');
+    } else if (dashboardType === 'Institute Cluster') {
+      headers.push('Cluster');
+    } else if (dashboardType === 'Missionary Preparatory Class') {
+      headers.push('Designation');
+    }
+
+    const csvRows = filteredRecords.map(r => {
+      const formattedTime = new Date(r.timestamp).toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+
+      const row = [
+        `"${(r.full_name || '').replace(/"/g, '""')}"`,
+        `"${r.phone_number || ''}"`,
+        `"${r.ward || ''}"`,
+        `"${r.date}"`,
+        `"${formattedTime}"`
+      ];
+
+      if (dashboardType === 'Skills Acquisition' || dashboardType === 'Institute Cluster' || dashboardType === 'Missionary Preparatory Class') {
+        row.push(`"${(r.skillCategory || '').replace(/"/g, '""')}"`);
+      }
+
+      return row.join(',');
+    });
+    
     const csvContent = [headers.join(','), ...csvRows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -299,6 +328,87 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     let filename = 'Attendance_Export';
     if (dashboardType === 'Institute Cluster' && filterCluster) {
       filename += `_${filterCluster}`;
+    } else if (dashboardType === 'Skills Acquisition' && filterSkill) {
+      filename += `_${filterSkill}`;
+    }
+
+    link.setAttribute('download', `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadSummaryCSV = () => {
+    if (filteredRecords.length === 0) return;
+
+    const headers = ['Ward/Branch', 'S/N', 'Full Name', 'Phone Number', 'Date', 'Time Marked'];
+    if (dashboardType === 'Skills Acquisition') {
+      headers.push('Skill');
+    } else if (dashboardType === 'Institute Cluster') {
+      headers.push('Cluster');
+    } else if (dashboardType === 'Missionary Preparatory Class') {
+      headers.push('Designation');
+    }
+
+    const rows: string[] = [];
+    
+    // Group records by ward
+    const grouped: Record<string, typeof filteredRecords> = {};
+    filteredRecords.forEach(r => {
+      const w = r.ward || 'Unknown';
+      if (!grouped[w]) grouped[w] = [];
+      grouped[w].push(r);
+    });
+
+    // Sort the wards alphabetically
+    const sortedWards = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+    sortedWards.forEach(ward => {
+      const wardRecords = grouped[ward];
+      // Separator row for visual organization in Excel
+      rows.push(`"--- ${ward.toUpperCase()} ---",,,,,`);
+      
+      wardRecords.forEach((r, idx) => {
+        const formattedTime = new Date(r.timestamp).toLocaleString('en-US', {
+          timeZone: 'Africa/Lagos', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+        });
+        
+        const rowData = [
+          `"${ward}"`,
+          `"${idx + 1}"`,
+          `"${(r.full_name || '').replace(/"/g, '""')}"`,
+          `"${r.phone_number || ''}"`,
+          `"${r.date}"`,
+          `"${formattedTime}"`
+        ];
+
+        if (dashboardType === 'Skills Acquisition' || dashboardType === 'Institute Cluster' || dashboardType === 'Missionary Preparatory Class') {
+          rowData.push(`"${(r.skillCategory || '').replace(/"/g, '""')}"`);
+        }
+
+        rows.push(rowData.join(','));
+      });
+      
+      // Subtotal for the ward
+      rows.push(`"TOTAL ${ward.toUpperCase()}", "${wardRecords.length}",,,,`);
+      rows.push(''); // Empty row spacing
+    });
+
+    // Grand Total
+    rows.push(`"GRAND TOTAL", "${filteredRecords.length}",,,,`);
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+
+    let filename = 'Attendance_Organized_Summary';
+    if (dashboardType === 'Institute Cluster' && filterCluster) {
+      filename += `_${filterCluster}`;
+    } else if (dashboardType === 'Skills Acquisition' && filterSkill) {
+      filename += `_${filterSkill}`;
     }
 
     link.setAttribute('download', `${filename}.csv`);
@@ -379,7 +489,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
           { id: 'Skills Acquisition', label: 'Skills Acquisition', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
           { id: 'Institute Cluster', label: 'Institute Cluster', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
           { id: 'Missionary Preparatory Class', label: 'Missionary Prep', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
-          { id: 'Feast of Love', label: 'Feast of Love', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> },
+          { id: 'Missionary Departure', label: 'Missionary Departure', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> },
+          { id: 'Devotional', label: 'Devotional', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg> },
+          { id: 'Movie Night', label: 'Movie Night', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg> },
         ].map((program) => (
           <button
             key={program.id}
@@ -661,12 +773,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 </button>
               )}
             </div>
-            <button
-              onClick={downloadCSV}
-              className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 font-semibold text-xs uppercase tracking-wide hover:bg-indigo-700 hover:scale-105"
-            >
-              Export Records
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <button
+                onClick={downloadCSV}
+                className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 font-semibold text-xs uppercase tracking-wide hover:bg-indigo-700 hover:scale-105"
+              >
+                Export Detailed CSV
+              </button>
+              <button
+                onClick={downloadSummaryCSV}
+                className="w-full sm:w-auto px-6 py-3 bg-slate-800 text-white rounded-xl transition-all shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 font-semibold text-xs uppercase tracking-wide hover:bg-slate-900 hover:scale-105"
+              >
+                Export Summary CSV
+              </button>
+            </div>
           </div>
           <AttendanceTable
             records={filteredRecords}

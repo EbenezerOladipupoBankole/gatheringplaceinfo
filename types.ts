@@ -6,7 +6,7 @@ export interface AttendanceRecord {
   ward: string;
   date: string; // YYYY-MM-DD
   timestamp: number;
-  eventType?: 'Friday Gathering' | 'Skills Acquisition';
+  eventType?: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Devotional' | 'Missionary Departure' | 'Movie Night';
   skillCategory?: string;
 }
 

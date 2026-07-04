@@ -46,7 +46,8 @@ const ALLOWED_ADMINS = [
   "samidowu2001@gmail.com",    // <--- Put the 2nd admin's email here
   "ife.victor1830@gmail.com",      // <--- Put the 3rd admin's email here
   "moshoodoyeniran09@gmail.com",
-  "adebakiadekunle@gmail.com"
+  "adebakiadekunle@gmail.com",
+  "jineepinee@gmail.com"
 ];
 
 const App: React.FC = () => {
@@ -95,11 +96,13 @@ const App: React.FC = () => {
     switch (view) {
       case ViewMode.USER_FORM:
         if (selectedProgram) {
-          let eventType: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Feast of Love' = 'Friday Gathering';
+          let eventType: 'Friday Gathering' | 'Skills Acquisition' | 'Institute Cluster' | 'Missionary Preparatory Class' | 'Devotional' | 'Missionary Departure' | 'Movie Night' = 'Friday Gathering';
           if (selectedProgram === 'skills') eventType = 'Skills Acquisition';
           else if (selectedProgram === 'cluster') eventType = 'Institute Cluster';
           else if (selectedProgram === 'missionary') eventType = 'Missionary Preparatory Class';
-          else if (selectedProgram === 'valentine') eventType = 'Feast of Love';
+          else if (selectedProgram === 'devotional') eventType = 'Devotional';
+          else if (selectedProgram === 'departure') eventType = 'Missionary Departure';
+          else if (selectedProgram === 'movie') eventType = 'Movie Night';
 
           return (
             <div className="w-full min-h-[calc(100vh-80px)] flex flex-col items-center justify-center py-8 px-4 relative z-10 bg-slate-50">
@@ -156,16 +159,6 @@ const App: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                   {
-                    id: 'valentine',
-                    title: "Feast of Love",
-                    day: 'Today Only',
-                    sub: 'Love & Friendship',
-                    img: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&auto=format&fit=crop&q=60',
-                    desc: 'A special gathering to celebrate love, friendship, and unity.',
-                    icon: <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>,
-                    special: true
-                  },
-                  {
                     id: 'skills',
                     title: 'Skills Acquisition',
                     day: 'Tuesday',
@@ -200,6 +193,33 @@ const App: React.FC = () => {
                     img: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?w=800&auto=format&fit=crop&q=60',
                     desc: 'Specialized preparation class for future full-time missionaries.',
                     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  },
+                  {
+                    id: 'departure',
+                    title: 'Missionary Departure',
+                    day: 'Special Event',
+                    sub: 'Departing & Returning',
+                    img: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop&q=60',
+                    desc: 'Check-in for missionaries departing for or returning from the field.',
+                    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                  },
+                  {
+                    id: 'devotional',
+                    title: 'Devotional',
+                    day: 'Special Event',
+                    sub: 'Stake Gathering',
+                    img: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800&auto=format&fit=crop&q=60',
+                    desc: 'A special time for spiritual instruction and edification.',
+                    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                  },
+                  {
+                    id: 'movie',
+                    title: 'Movie Night',
+                    day: 'Social Event',
+                    sub: 'Entertainment & Fellowship',
+                    img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=60',
+                    desc: 'A fun evening of watching uplifting movies with friends.',
+                    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
                   }
                 ].map((program, idx) => (
                   <button

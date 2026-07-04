@@ -4,7 +4,8 @@ export const WARDS = [
   "Ake Ward",
   "Alabata Branch",
   "Apena Branch",
-  "Camp Branch",
+  "Apete Branch",
+  "Camp Ward",
   "Idi-aba Ward",
   "Kugba Branch",
   "Kuto Ward",
@@ -37,20 +38,20 @@ export const MEMBER_ROSTER: RosterMember[] = [
   { name: "Talabi Victor", ward: "Ake Ward" },
   { name: "Yamenesa Gabriel", ward: "Ake Ward" },
 
-  // --- Camp Branch ---
-  { name: "Adeosun Oyinlola", ward: "Camp Branch" },
-  { name: "Ateru Princess", ward: "Camp Branch" },
-  { name: "Bankole Bolariwa", ward: "Camp Branch" },
-  { name: "Egunjobi Bukola", ward: "Camp Branch" },
-  { name: "Essiet Samson", ward: "Camp Branch" },
-  { name: "Essiet Udo", ward: "Camp Branch" },
-  { name: "Iduwe Mercy", ward: "Camp Branch" },
-  { name: "Ogunbiyi Oluwatobiloba", ward: "Camp Branch" },
-  { name: "Ogunsola Boluwatife", ward: "Camp Branch" },
-  { name: "Ogunsola Ifeoluwa", ward: "Camp Branch" },
-  { name: "Olawale Sunday", ward: "Camp Branch" },
-  { name: "Omoyele Boluwatife", ward: "Camp Branch" },
-  { name: "Sosanya Mubarak", ward: "Camp Branch" },
+  // --- Camp Ward ---
+  { name: "Adeosun Oyinlola", ward: "Camp Ward" },
+  { name: "Ateru Princess", ward: "Camp Ward" },
+  { name: "Bankole Bolariwa", ward: "Camp Ward" },
+  { name: "Egunjobi Bukola", ward: "Camp Ward" },
+  { name: "Essiet Samson", ward: "Camp Ward" },
+  { name: "Essiet Udo", ward: "Camp Ward" },
+  { name: "Iduwe Mercy", ward: "Camp Ward" },
+  { name: "Ogunbiyi Oluwatobiloba", ward: "Camp Ward" },
+  { name: "Ogunsola Boluwatife", ward: "Camp Ward" },
+  { name: "Ogunsola Ifeoluwa", ward: "Camp Ward" },
+  { name: "Olawale Sunday", ward: "Camp Ward" },
+  { name: "Omoyele Boluwatife", ward: "Camp Ward" },
+  { name: "Sosanya Mubarak", ward: "Camp Ward" },
 
   // --- Idi-aba Ward ---
   { name: "Adam Adebesin", ward: "Idi-aba Ward" },
@@ -119,7 +120,7 @@ export const MEMBER_ROSTER: RosterMember[] = [
 
 export const MOCK_RECORDS = [
   { id: '1', full_name: 'Omode Bamidele', phone_number: '08012345678', ward: 'Kuto Ward', date: '2024-01-05', timestamp: 1704441600000 },
-  { id: '2', full_name: 'Essiet Udo', phone_number: '08123456789', ward: 'Camp Branch', date: '2024-01-05', timestamp: 1704441600000 },
+  { id: '2', full_name: 'Essiet Udo', phone_number: '08123456789', ward: 'Camp Ward', date: '2024-01-05', timestamp: 1704441600000 },
   { id: '3', full_name: 'Adam Adebesin', phone_number: '07034567890', ward: 'Idi-aba Ward', date: '2024-01-12', timestamp: 1705046400000 },
   { id: '4', full_name: 'Ejechi David', phone_number: '09045678901', ward: 'Ake Ward', date: '2024-01-12', timestamp: 1705046400000 },
   { id: '5', full_name: 'Faith Ososami', phone_number: '08056789012', ward: 'Leme Ward', date: '2024-02-02', timestamp: 1706860800000 },
